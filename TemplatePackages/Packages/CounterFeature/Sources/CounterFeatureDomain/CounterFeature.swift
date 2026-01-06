@@ -10,11 +10,9 @@ public struct CounterFeature {
   @ObservableState
   public struct State: Equatable {
     public var count: Int
-    public var isLoading: Bool
 
-    public init(count: Int = 0, isLoading: Bool = false) {
+    public init(count: Int = 0) {
       self.count = count
-      self.isLoading = isLoading
     }
   }
 

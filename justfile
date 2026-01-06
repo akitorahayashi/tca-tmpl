@@ -86,15 +86,16 @@ gen-pj:
 
 # Resolve Swift package dependencies
 resolve-packages cache_path=SWIFTPM_DEP_CACHE:
-    @echo "Using dependency cache at: {{cache_path}}"
-    @mkdir -p {{cache_path}}
-    @set -e
-    @echo "🔄 Resolving dependencies for TemplatePackages..."
+    #!/usr/bin/env bash
+    set -e
+    echo "Using dependency cache at: {{cache_path}}"
+    mkdir -p "{{cache_path}}"
+    echo "🔄 Resolving dependencies for TemplatePackages..."
     swift package resolve --package-path TemplatePackages --cache-path "{{cache_path}}"
-    @echo "✅ Package resolution complete."
-    @echo "Resolving Xcode project dependencies..."
-    @xcodebuild -resolvePackageDependencies -project {{PROJECT_FILE}}
-    @echo "✅ Xcode dependencies resolved."
+    echo "✅ Package resolution complete."
+    echo "Resolving Xcode project dependencies..."
+    xcodebuild -resolvePackageDependencies -project {{PROJECT_FILE}}
+    echo "✅ Xcode dependencies resolved."
 
 # Reset SwiftPM cache, dependencies, and build artifacts
 resolve-pkg:

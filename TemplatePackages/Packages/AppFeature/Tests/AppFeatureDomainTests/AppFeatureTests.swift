@@ -9,7 +9,6 @@ final class AppFeatureTests: XCTestCase {
   func testInitialState() {
     let state = AppFeature.State()
     XCTAssertEqual(state.counter.count, 0)
-    XCTAssertFalse(state.counter.isLoading)
   }
 
   func testCounterIncrement() async {

@@ -3,7 +3,7 @@ import Foundation
 /// Configuration constants for the application.
 enum AppConfiguration {
   /// The app's display name.
-  static let appName = "Template App"
+  static let appName = "TemplateApp"
 
   /// The app's bundle identifier prefix.
   static let bundleIdPrefix = "com.akitorahayashi"
