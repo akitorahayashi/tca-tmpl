@@ -23,6 +23,7 @@ jobs:
       - name: Resolve Swift packages
         run: |
           echo "🔄 Resolving Swift package dependencies..."
+          mkdir -p fastlane/build/test-results/DerivedData/Debug
           xcodebuild -resolvePackageDependencies -project TemplateApp.xcodeproj -scheme TemplateApp -derivedDataPath fastlane/build/test-results/DerivedData/Debug
           echo "✅ Package resolution complete."
 
