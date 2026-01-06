@@ -15,11 +15,6 @@ default_platform(:ios)
 require "fileutils"
 require_relative "config"
 
-DEFAULT_SIMULATOR_DESTINATION = ENV.fetch(
-  "SIMULATOR_DESTINATION",
-  "platform=iOS Simulator,name=iPhone 15,OS=latest"
-).freeze
-
 before_all do
   ENV["FL_BUILDLOG_PATH"] = LOGS_PATH
   ENV["FASTLANE_XCODEBUILD_SETTINGS_TIMEOUT"] = "20"
@@ -176,7 +171,23 @@ platform :ios do
     udid = options[:udid].to_s.strip
     return "platform=iOS Simulator,id=#{udid}" unless udid.empty?
 
-    DEFAULT_SIMULATOR_DESTINATION
+    env_destination = ENV["SIMULATOR_DESTINATION"].to_s.strip
+    return env_destination unless env_destination.empty?
+
+    selected_udid = find_available_iphone_simulator_udid
+    if selected_udid.empty?
+      UI.user_error!("Unable to find an available iPhone simulator on this runner.")
+    end
+
+    UI.message("Using simulator UDID: #{selected_udid}")
+    "platform=iOS Simulator,id=#{selected_udid}"
+  end
+
+  def find_available_iphone_simulator_udid
+    output = sh("xcrun simctl list devices available 'iPhone'", log: false)
+    output.to_s[/[0-9A-Fa-f-]{36}/].to_s.strip
+  rescue StandardError
+    ""
   end
 
   def print_latest_xcodebuild_log(buildlog_path:, lines:)
