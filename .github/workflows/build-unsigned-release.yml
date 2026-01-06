@@ -8,6 +8,9 @@ on:
       APPLE_ID:
         required: true
 
+env:
+  SWIFTPM_ROOT: ${{ github.workspace }}/.cache/swiftpm/tca-tmpl
+
 jobs:
   archive:
     runs-on: macos-14
@@ -27,6 +30,12 @@ jobs:
           setup_xcode: true
           generate_project: true
           setup_ruby: true
+
+      - name: Resolve Swift packages
+        run: |
+          echo "🔄 Resolving and building Swift package dependencies..."
+          xcodebuild -resolvePackageDependencies -project TemplateApp.xcodeproj -scheme TemplateApp
+          echo "✅ Package resolution complete."
 
       - name: Build Unsigned Release Version
         run: just build-release

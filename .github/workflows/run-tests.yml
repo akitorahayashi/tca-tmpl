@@ -20,6 +20,12 @@ jobs:
           generate_project: true
           setup_ruby: true
 
+      - name: Resolve Swift packages
+        run: |
+          echo "🔄 Resolving and building Swift package dependencies..."
+          xcodebuild -resolvePackageDependencies -project TemplateApp.xcodeproj -scheme TemplateApp
+          echo "✅ Package resolution complete."
+
       - name: Build for Testing
         run: just build-test
 
