@@ -87,6 +87,7 @@ platform :ios do
     }
 
     passed_xcargs = options[:xcargs].to_s.strip
+    passed_xcargs += " -skipMacroValidation" if ENV["CI"]
     scan_args[:xcargs] = passed_xcargs unless passed_xcargs.empty?
 
     begin
@@ -237,6 +238,7 @@ platform :ios do
     FileUtils.mkdir_p(BUILD_LOGS_PATH)
 
     passed_xcargs = options[:xcargs].to_s.strip
+    passed_xcargs += " -skipMacroValidation" if ENV["CI"]
     build_app(
       project: PROJECT_PATH,
       scheme: SCHEMES[:app],
