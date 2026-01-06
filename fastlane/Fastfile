@@ -15,11 +15,9 @@ default_platform(:ios)
 require_relative 'config'
 
 before_all do
-  Dir.chdir(File.expand_path("..", __dir__))
-
   # Set the global log path default to the project-local directory
   # This becomes the fallback if buildlog_path is not specified
-  ENV["FL_BUILDLOG_PATH"] = File.expand_path(LOGS_PATH, Dir.pwd)
+  ENV["FL_BUILDLOG_PATH"] = LOGS_PATH
 end
 
 platform :ios do
@@ -253,7 +251,6 @@ platform :ios do
     scan_args[:test_without_building] = options[:test_without_building] if options[:test_without_building]
 
     begin
-      scan_args[:fail_build] = false
       scan(**scan_args)
       UI.success("✅ Test successful for scheme '#{options[:scheme]}' (output suppressed)")
     rescue => ex
