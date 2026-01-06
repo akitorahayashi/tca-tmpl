@@ -3,7 +3,7 @@ import XCTest
 
 final class TemplateAppTests: XCTestCase {
   func testAppConfigurationValues() {
-    XCTAssertEqual(AppConfiguration.appName, "Template App")
+    XCTAssertEqual(AppConfiguration.appName, "TemplateApp")
     XCTAssertEqual(AppConfiguration.bundleIdPrefix, "com.akitorahayashi")
     XCTAssertEqual(AppConfiguration.minimumIOSVersion, "17.0")
   }

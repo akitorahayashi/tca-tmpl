@@ -15,9 +15,11 @@ default_platform(:ios)
 require_relative 'config'
 
 before_all do
+  Dir.chdir(File.expand_path("..", __dir__))
+
   # Set the global log path default to the project-local directory
   # This becomes the fallback if buildlog_path is not specified
-  ENV["FL_BUILDLOG_PATH"] = LOGS_PATH
+  ENV["FL_BUILDLOG_PATH"] = File.expand_path(LOGS_PATH, Dir.pwd)
 end
 
 platform :ios do
@@ -79,9 +81,8 @@ platform :ios do
     
     # Pre-build to ensure Swift macros are compiled before test build
     # This is necessary for GitHub-hosted runners where caches aren't persistent
-    # Note: sh() runs from fastlane/ directory, so we need to cd to project root
     UI.message("🔧 Pre-building to compile Swift macros...")
-    sh("cd .. && xcodebuild build -project #{PROJECT_PATH} -scheme #{SCHEMES[:app]} -configuration #{configuration} -derivedDataPath #{derived_data_path} -destination 'platform=iOS Simulator,id=#{udid}' CODE_SIGN_IDENTITY='' CODE_SIGNING_REQUIRED=NO 2>&1 | xcbeautify || true")
+    sh("xcodebuild build -project #{PROJECT_PATH} -scheme #{SCHEMES[:app]} -configuration #{configuration} -derivedDataPath #{derived_data_path} -destination 'platform=iOS Simulator,id=#{udid}' CODE_SIGN_IDENTITY='' CODE_SIGNING_REQUIRED=NO 2>&1 | xcbeautify || true")
     UI.message("✅ Pre-build complete, starting test build...")
     
     scan_args = {
@@ -180,9 +181,8 @@ platform :ios do
     
     # Pre-build to ensure Swift macros are compiled before archiving
     # This is necessary for GitHub-hosted runners where caches aren't persistent
-    # Note: sh() runs from fastlane/ directory, so we need to cd to project root
     UI.message("🔧 Pre-building to compile Swift macros...")
-    sh("cd .. && xcodebuild build -project #{PROJECT_PATH} -scheme #{SCHEMES[:app]} -configuration #{configuration} -derivedDataPath #{paths[:derived_data_path]} -destination 'generic/platform=iOS' CODE_SIGN_IDENTITY='' CODE_SIGNING_REQUIRED=NO 2>&1 | xcbeautify || true")
+    sh("xcodebuild build -project #{PROJECT_PATH} -scheme #{SCHEMES[:app]} -configuration #{configuration} -derivedDataPath #{paths[:derived_data_path]} -destination 'generic/platform=iOS' CODE_SIGN_IDENTITY='' CODE_SIGNING_REQUIRED=NO 2>&1 | xcbeautify || true")
     UI.message("✅ Pre-build complete, starting archive...")
     
     build_app(
