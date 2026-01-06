@@ -20,13 +20,11 @@ jobs:
           generate_project: true
           setup_ruby: true
 
-      - name: Resolve and pre-build Swift packages
+      - name: Resolve Swift packages
         run: |
           echo "🔄 Resolving Swift package dependencies..."
           xcodebuild -resolvePackageDependencies -project TemplateApp.xcodeproj -scheme TemplateApp
-          echo "🔧 Pre-building local package to ensure macros are compiled..."
-          swift build --package-path TemplatePackages --target AppFeatureDomain
-          echo "✅ Package preparation complete."
+          echo "✅ Package resolution complete."
 
       - name: Build for Testing
         run: just build-test

@@ -76,6 +76,13 @@ platform :ios do
 
     get_simulator_info(options)
     udid = Actions.lane_context[:SIMULATOR_UDID]
+    
+    # Pre-build to ensure Swift macros are compiled before test build
+    # This is necessary for GitHub-hosted runners where caches aren't persistent
+    UI.message("🔧 Pre-building to compile Swift macros...")
+    sh("xcodebuild build -project #{PROJECT_PATH} -scheme #{SCHEMES[:app]} -configuration #{configuration} -derivedDataPath #{derived_data_path} -destination 'platform=iOS Simulator,id=#{udid}' CODE_SIGN_IDENTITY='' CODE_SIGNING_REQUIRED=NO | xcbeautify || true")
+    UI.message("✅ Pre-build complete, starting test build...")
+    
     scan_args = {
       project: PROJECT_PATH,
       scheme: SCHEMES[:app],
@@ -83,7 +90,7 @@ platform :ios do
       derived_data_path: derived_data_path,
       configuration: configuration,
       build_for_testing: true,
-      clean: true,
+      clean: false,  # Skip clean since we just built
       buildlog_path: TEST_LOGS_PATH,
       suppress_xcode_output: true
     }
@@ -169,11 +176,18 @@ platform :ios do
     configuration = options[:configuration]
     passed_xcargs = options[:xcargs] || ""
     paths = config_paths(configuration)
+    
+    # Pre-build to ensure Swift macros are compiled before archiving
+    # This is necessary for GitHub-hosted runners where caches aren't persistent
+    UI.message("🔧 Pre-building to compile Swift macros...")
+    sh("xcodebuild build -project #{PROJECT_PATH} -scheme #{SCHEMES[:app]} -configuration #{configuration} -derivedDataPath #{paths[:derived_data_path]} -destination 'generic/platform=iOS' CODE_SIGN_IDENTITY='' CODE_SIGNING_REQUIRED=NO | xcbeautify || true")
+    UI.message("✅ Pre-build complete, starting archive...")
+    
     build_app(
       project: PROJECT_PATH,
       scheme: SCHEMES[:app],
       configuration: configuration,
-      clean: true,
+      clean: false,  # Skip clean since we just built
       skip_codesigning: true,
       skip_package_ipa: true,
       derived_data_path: paths[:derived_data_path],
