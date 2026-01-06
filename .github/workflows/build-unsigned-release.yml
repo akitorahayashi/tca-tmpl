@@ -13,7 +13,7 @@ env:
 
 jobs:
   archive:
-    runs-on: macos-15
+    runs-on: macos-14
     env:
       MINT_PATH: ${{ github.workspace }}/.mint
       TEAM_ID: ${{ secrets.TEAM_ID }}
