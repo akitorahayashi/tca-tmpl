@@ -14,6 +14,12 @@ default_platform(:ios)
 
 require_relative 'config'
 
+DETERMINISTIC_XCODEBUILD_SETTINGS = [
+  "PARALLELIZE_BUILD=NO",
+  "SWIFT_MAXIMUM_CONCURRENT_COMPILE_TASKS=1",
+  "SKIP_MACRO_VALIDATION=YES",
+].join(" ").freeze
+
 before_all do
   # Set the global log path default to the project-local directory
   # This becomes the fallback if buildlog_path is not specified
@@ -70,18 +76,13 @@ platform :ios do
     if configuration == CONFIGURATIONS[:release]
       xcargs_items << "ENABLE_TESTABILITY=YES"
     end
+    xcargs_items << DETERMINISTIC_XCODEBUILD_SETTINGS
     
     xcargs_items << passed_xcargs unless passed_xcargs.empty?
     xcargs = xcargs_items.join(' ')
 
     get_simulator_info(options)
     udid = Actions.lane_context[:SIMULATOR_UDID]
-    
-    # Pre-build to ensure Swift macros are compiled before test build
-    # This is necessary for GitHub-hosted runners where caches aren't persistent
-    UI.message("🔧 Pre-building to compile Swift macros...")
-    sh("xcodebuild build -project #{PROJECT_PATH} -scheme #{SCHEMES[:app]} -configuration #{configuration} -derivedDataPath #{derived_data_path} -destination 'platform=iOS Simulator,id=#{udid}' CODE_SIGN_IDENTITY='' CODE_SIGNING_REQUIRED=NO 2>&1 | xcbeautify || true")
-    UI.message("✅ Pre-build complete, starting test build...")
     
     scan_args = {
       project: PROJECT_PATH,
@@ -90,11 +91,11 @@ platform :ios do
       derived_data_path: derived_data_path,
       configuration: configuration,
       build_for_testing: true,
-      clean: false,  # Skip clean since we just built
+      clean: false,
       buildlog_path: TEST_LOGS_PATH,
       suppress_xcode_output: true
     }
-    scan_args[:xcargs] = xcargs unless xcargs.empty?
+    scan_args[:xcargs] = xcargs
     scan(**scan_args)
   end
 
@@ -177,17 +178,15 @@ platform :ios do
     passed_xcargs = options[:xcargs] || ""
     paths = config_paths(configuration)
     
-    # Pre-build to ensure Swift macros are compiled before archiving
-    # This is necessary for GitHub-hosted runners where caches aren't persistent
-    UI.message("🔧 Pre-building to compile Swift macros...")
-    sh("xcodebuild build -project #{PROJECT_PATH} -scheme #{SCHEMES[:app]} -configuration #{configuration} -derivedDataPath #{paths[:derived_data_path]} -destination 'generic/platform=iOS' CODE_SIGN_IDENTITY='' CODE_SIGNING_REQUIRED=NO 2>&1 | xcbeautify || true")
-    UI.message("✅ Pre-build complete, starting archive...")
+    xcargs_items = [DETERMINISTIC_XCODEBUILD_SETTINGS]
+    xcargs_items << passed_xcargs unless passed_xcargs.empty?
+    xcargs = xcargs_items.join(' ')
     
     build_app(
       project: PROJECT_PATH,
       scheme: SCHEMES[:app],
       configuration: configuration,
-      clean: false,  # Skip clean since we just built
+      clean: false,
       skip_codesigning: true,
       skip_package_ipa: true,
       derived_data_path: paths[:derived_data_path],
@@ -195,7 +194,7 @@ platform :ios do
       export_team_id: ENV['TEAM_ID'],
       buildlog_path: BUILD_LOGS_PATH,
       suppress_xcode_output: true,
-      xcargs: passed_xcargs
+      xcargs: xcargs
     )
   end
 
@@ -233,6 +232,9 @@ platform :ios do
     derived_data_path = "#{TEST_DERIVED_DATA_PATH}/#{configuration}"
     
     passed_xcargs = options[:xcargs] || ""
+    xcargs_items = [DETERMINISTIC_XCODEBUILD_SETTINGS]
+    xcargs_items << passed_xcargs unless passed_xcargs.empty?
+    xcargs = xcargs_items.join(' ')
 
     scan_args = {
       project: PROJECT_PATH,
@@ -247,7 +249,7 @@ platform :ios do
       suppress_xcode_output: true
     }
 
-    scan_args[:xcargs] = passed_xcargs unless passed_xcargs.empty?
+    scan_args[:xcargs] = xcargs
     scan_args[:test_without_building] = options[:test_without_building] if options[:test_without_building]
 
     begin
