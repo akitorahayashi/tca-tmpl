@@ -1,0 +1,29 @@
+# App Feature
+- package: TemplatePackages
+  product: AppFeatureDomain
+- package: TemplatePackages
+  product: AppFeatureUI
+
+# Counter Feature
+- package: TemplatePackages
+  product: CounterFeatureDomain
+- package: TemplatePackages
+  product: CounterFeatureUI
+
+# External Dependencies (TCA and transitive dependencies)
+- package: ComposableArchitecture
+  product: ComposableArchitecture
+- package: Dependencies
+  product: Dependencies
+- package: CasePaths
+  product: CasePaths
+- package: CasePaths
+  product: CasePathsCore
+- package: IdentifiedCollections
+  product: IdentifiedCollections
+- package: Perception
+  product: Perception
+- package: Perception
+  product: PerceptionCore
+- package: IssueReporting
+  product: IssueReporting

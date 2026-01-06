@@ -1,18 +1,34 @@
+import AppFeatureDomain
+import AppFeatureUI
+import ComposableArchitecture
 import SwiftUI
 
 @main
 struct TemplateApp: App {
-  private let dependencies: AppDependencies
+  private let store: StoreOf<AppFeature>
 
   init() {
-    // Generate production dependencies at app launch
-    self.dependencies = .live()
+    self.store = Self.makeStore(dependencies: AppDependencies.live())
+  }
+
+  /// Initializer for tests and previews to inject dependencies.
+  init(dependencies: AppDependencies) {
+    self.store = Self.makeStore(dependencies: dependencies)
   }
 
   var body: some Scene {
     WindowGroup {
-      // Inject generated dependencies into the view
-      ContentView(dependencies: self.dependencies)
+      ContentView(store: self.store)
+    }
+  }
+}
+
+private extension TemplateApp {
+  static func makeStore(dependencies: AppDependencies) -> StoreOf<AppFeature> {
+    Store(initialState: AppFeature.State()) {
+      AppFeature()
+    } withDependencies: {
+      dependencies.configure(&$0)
     }
   }
 }

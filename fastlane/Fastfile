@@ -241,14 +241,16 @@ platform :ios do
       scan(**scan_args)
       UI.success("✅ Test successful for scheme '#{options[:scheme]}' (output suppressed)")
     rescue => ex
-      log_path = lane_context[SharedValues::SCAN_BUILDLOG_PATH]
-      UI.error("❌ Test failed. Showing last 100 lines from log: #{log_path}")
-      
+      log_path = File.expand_path(scan_args[:buildlog_path], __dir__)
+      UI.error("❌ Test failed for scheme '#{options[:scheme]}'")
+
       if log_path && File.exist?(log_path)
+        UI.message("Showing last 100 lines from log: #{log_path}")
         UI.message(File.read(log_path).lines.last(100).join)
       else
         UI.error("Could not find log file at: #{log_path}")
       end
+
       raise ex
     end
   end
