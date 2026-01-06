@@ -1,0 +1,138 @@
+name: TemplateApp
+options:
+  bundleIdPrefix: com.akitorahayashi
+  createIntermediateGroups: true
+  defaultConfig: Debug
+  teamId: ${TEAM_ID}
+
+settings:
+  base:
+    SWIFT_VERSION: 6.0
+    MARKETING_VERSION: 1.0
+    CURRENT_PROJECT_VERSION: 1
+    ENABLE_USER_SCRIPT_SANDBOXING: "NO"
+    DEVELOPMENT_TEAM: $TEAM_ID
+    SKIP_MACRO_VALIDATION: "YES"
+  configs:
+    Debug:
+      SWIFT_OPTIMIZATION_LEVEL: "-Onone"
+    Release:
+      SWIFT_OPTIMIZATION_LEVEL: "-O" 
+
+configs:
+  Debug: debug
+  Release: release
+
+targets:
+  TemplateApp:
+    type: application
+    platform: iOS
+    deploymentTarget: "15.0"
+    sources:
+      - TemplateApp
+    settings:
+      PRODUCT_NAME: $(TARGET_NAME)
+      PRODUCT_DISPLAY_NAME: $(TARGET_NAME)
+      INFOPLIST_FILE: TemplateApp/Info.plist
+      ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+      DEVELOPMENT_ASSET_PATHS: TemplateApp/Resources
+    # dependencies:
+      # - package: ApiClient
+      #   product: ApiClient
+
+  TemplateAppTests:
+    type: bundle.unit-test
+    platform: iOS
+    deploymentTarget: "15.0"
+    sources:
+      - TemplateAppTests
+    dependencies:
+      - target: TemplateApp
+    settings:
+      PRODUCT_NAME: $(TARGET_NAME)
+      PRODUCT_DISPLAY_NAME: $(TARGET_NAME)
+      INFOPLIST_FILE: TemplateAppTests/Info.plist
+
+  TemplateAppIntgTests:
+    type: bundle.unit-test
+    platform: iOS
+    deploymentTarget: "15.0"
+    sources:
+      - TemplateAppIntgTests
+    dependencies:
+      - target: TemplateApp
+    settings:
+      PRODUCT_NAME: $(TARGET_NAME)
+      PRODUCT_DISPLAY_NAME: $(TARGET_NAME)
+      INFOPLIST_FILE: TemplateAppIntgTests/Info.plist
+
+  TemplateAppUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    deploymentTarget: "15.0"
+    sources:
+      - TemplateAppUITests
+    dependencies:
+      - target: TemplateApp
+    settings:
+      PRODUCT_NAME: $(TARGET_NAME)
+      PRODUCT_DISPLAY_NAME: $(TARGET_NAME)
+      INFOPLIST_FILE: TemplateAppUITests/Info.plist
+
+schemes:
+  TemplateApp:
+    build:
+      targets:
+        TemplateApp: all
+    run:
+      config: Debug
+    test:
+      config: Debug
+      gatherCoverageData: false
+      targets:
+        - TemplateAppTests
+        - TemplateAppUITests
+        - TemplateAppIntgTests
+    archive:
+      config: Release
+
+  TemplateAppTests:
+    build:
+      targets:
+        TemplateAppTests: all
+    test:
+      config: Debug
+      gatherCoverageData: false
+      targets:
+        - TemplateAppTests
+
+  TemplateAppIntgTests:
+    build:
+      targets:
+        TemplateAppIntgTests: all
+    test:
+      config: Debug
+      gatherCoverageData: false
+      targets:
+        - TemplateAppIntgTests
+
+  TemplateAppUITests:
+    build:
+      targets:
+        TemplateAppUITests: all
+    test:
+      config: Debug
+      gatherCoverageData: false
+      targets:
+        - TemplateAppUITests
+
+# packages:
+#   ApiClient:
+#     path: Packages/ApiClient
+#   # Example: Adding a local package
+#   # MyLocalPackage:
+#   #   path: Packages/MyLocalPackage
+#   # Example: Adding a remote package (with URL)
+#   # Alamofire:
+#   #   url: https://github.com/Alamofire/Alamofire
+#   #   from: 5.0.0
