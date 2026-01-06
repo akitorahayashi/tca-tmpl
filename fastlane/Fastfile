@@ -12,48 +12,44 @@
 
 default_platform(:ios)
 
-require_relative 'config'
-require 'fileutils'
+require "fileutils"
+require_relative "config"
 
-DETERMINISTIC_XCODEBUILD_SETTINGS = [
-  "PARALLELIZE_BUILD=NO",
-  "SWIFT_MAXIMUM_CONCURRENT_COMPILE_TASKS=1",
-  "SKIP_MACRO_VALIDATION=YES",
-].join(" ").freeze
-
-def ensure_directory_exists(path)
-  FileUtils.mkdir_p(path) unless Dir.exist?(path)
-end
-
-def ensure_parent_directory_exists(path)
-  ensure_directory_exists(File.dirname(path))
-end
+DEFAULT_SIMULATOR_DESTINATION = ENV.fetch(
+  "SIMULATOR_DESTINATION",
+  "platform=iOS Simulator,name=iPhone 15,OS=latest"
+).freeze
 
 before_all do
-  # Set the global log path default to the project-local directory
-  # This becomes the fallback if buildlog_path is not specified
   ENV["FL_BUILDLOG_PATH"] = LOGS_PATH
+  ENV["FASTLANE_XCODEBUILD_SETTINGS_TIMEOUT"] = "20"
 
-  ensure_directory_exists(BUILD_PATH)
-  ensure_directory_exists(LOGS_PATH)
-  ensure_directory_exists(TEST_LOGS_PATH)
+  [
+    BUILD_PATH,
+    LOGS_PATH,
+    TEST_LOGS_PATH,
+    BUILD_LOGS_PATH,
+    TEST_RESULTS_PATH,
+  ].each { |path| FileUtils.mkdir_p(path) }
 end
 
 platform :ios do
-# === Build-only Lanes ===
+  # === Build-only Lanes ===
   desc "Build unsigned debug archive"
   lane :build_debug do |options|
+    options ||= {}
     build_app_with_config(
       configuration: CONFIGURATIONS[:debug],
-      xcargs: options[:xcargs] || ""
+      xcargs: options[:xcargs]
     )
   end
 
   desc "Build unsigned release archive"
   lane :build_release do |options|
+    options ||= {}
     build_app_with_config(
       configuration: CONFIGURATIONS[:release],
-      xcargs: options[:xcargs] || ""
+      xcargs: options[:xcargs]
     )
   end
 
@@ -69,10 +65,10 @@ platform :ios do
 
   desc "Sign release archive with specified export method (development, app_store, ad_hoc, enterprise)"
   lane :sign_release do |options|
-    export_method = options[:export_method]
+    options ||= {}
     sign_archive(
       archive_path: RELEASE_ARCHIVE_PATH,
-      export_method: export_method,
+      export_method: options[:export_method],
       configuration: CONFIGURATIONS[:release]
     )
   end
@@ -80,224 +76,225 @@ platform :ios do
   # === Test Lanes ===
   desc "Build for testing"
   lane :build_for_testing do |options|
+    options ||= {}
     configuration = options[:configuration] || CONFIGURATIONS[:debug]
-    derived_data_path = "#{TEST_DERIVED_DATA_PATH}/#{configuration}"
 
-    passed_xcargs = options[:xcargs] || ""
-
-    xcargs_items = []
-    if configuration == CONFIGURATIONS[:release]
-      xcargs_items << "ENABLE_TESTABILITY=YES"
-    end
-    xcargs_items << DETERMINISTIC_XCODEBUILD_SETTINGS
-    
-    xcargs_items << passed_xcargs unless passed_xcargs.empty?
-    xcargs = xcargs_items.join(' ')
-
-    get_simulator_info(options)
-    udid = Actions.lane_context[:SIMULATOR_UDID]
-
-    ensure_directory_exists(TEST_RESULTS_PATH)
-    ensure_directory_exists(TEST_DERIVED_DATA_PATH)
-    ensure_directory_exists(derived_data_path)
-    ensure_directory_exists(TEST_LOGS_PATH)
-    
     scan_args = {
       project: PROJECT_PATH,
       scheme: SCHEMES[:app],
-      destination: "platform=iOS Simulator,id=#{udid}",
-      derived_data_path: derived_data_path,
+      destination: simulator_destination_from(options),
+      derived_data_path: File.join(TEST_DERIVED_DATA_PATH, configuration),
       configuration: configuration,
       build_for_testing: true,
-      clean: is_ci?,
+      clean: true,
       buildlog_path: TEST_LOGS_PATH,
-      suppress_xcode_output: true
+      suppress_xcode_output: true,
     }
-    scan_args[:xcargs] = xcargs
-    scan(**scan_args)
+
+    passed_xcargs = options[:xcargs].to_s.strip
+    scan_args[:xcargs] = passed_xcargs unless passed_xcargs.empty?
+
+    begin
+      scan(**scan_args)
+      UI.success("✅ Build-for-testing successful (output suppressed)")
+    rescue => ex
+      UI.error("❌ Build-for-testing failed for scheme '#{SCHEMES[:app]}'")
+      print_latest_xcodebuild_log(buildlog_path: scan_args[:buildlog_path], lines: 200)
+      raise ex
+    end
   end
 
   desc "Run unit tests"
   lane :unit_test do |options|
-    test_with_scheme(scheme: SCHEMES[:unit_test], result_path: UNIT_TEST_RESULT_PATH, **options)
+    options ||= {}
+    test_with_scheme({ scheme: SCHEMES[:unit_test], result_path: UNIT_TEST_RESULT_PATH }.merge(options))
   end
 
   desc "Run unit tests without building"
   lane :unit_test_without_building do |options|
-    test_with_scheme(scheme: SCHEMES[:unit_test], result_path: UNIT_TEST_RESULT_PATH, test_without_building: true, **options)
+    options ||= {}
+    test_with_scheme(
+      {
+        scheme: SCHEMES[:unit_test],
+        result_path: UNIT_TEST_RESULT_PATH,
+        test_without_building: true,
+      }.merge(options)
+    )
   end
 
   desc "Run integration tests"
   lane :intg_test do |options|
-    test_with_scheme(scheme: SCHEMES[:intg_test], result_path: INTG_TEST_RESULT_PATH, **options)
+    options ||= {}
+    test_with_scheme({ scheme: SCHEMES[:intg_test], result_path: INTG_TEST_RESULT_PATH }.merge(options))
   end
 
   desc "Run integration tests without building"
   lane :intg_test_without_building do |options|
-    test_with_scheme(scheme: SCHEMES[:intg_test], result_path: INTG_TEST_RESULT_PATH, test_without_building: true, **options)
+    options ||= {}
+    test_with_scheme(
+      {
+        scheme: SCHEMES[:intg_test],
+        result_path: INTG_TEST_RESULT_PATH,
+        test_without_building: true,
+      }.merge(options)
+    )
   end
 
   desc "Run UI tests"
   lane :ui_test do |options|
-    test_with_scheme(scheme: SCHEMES[:ui_test], result_path: UI_TEST_RESULT_PATH, **options)
+    options ||= {}
+    test_with_scheme({ scheme: SCHEMES[:ui_test], result_path: UI_TEST_RESULT_PATH }.merge(options))
   end
 
   desc "Run UI tests without building (xcodebuild test-without-building)"
   lane :ui_test_without_building do |options|
-    test_with_scheme(scheme: SCHEMES[:ui_test], result_path: UI_TEST_RESULT_PATH, test_without_building: true, **options)
+    options ||= {}
+    test_with_scheme(
+      {
+        scheme: SCHEMES[:ui_test],
+        result_path: UI_TEST_RESULT_PATH,
+        test_without_building: true,
+      }.merge(options)
+    )
   end
 
   desc "Run all tests (Unit, UI, Intg)"
-  lane :test_all do
-    build_for_testing
-    unit_test_without_building
-    intg_test_without_building
-    ui_test_without_building
+  lane :test_all do |options|
+    options ||= {}
+    build_for_testing(options)
+    unit_test_without_building(options)
+    intg_test_without_building(options)
+    ui_test_without_building(options)
   end
 
-# === Private ===
+  # === Private ===
 
-  desc "Get simulator information based on environment"
-  private_lane :get_simulator_info do |options|
-    udid = options[:udid]
-    if udid.nil? || udid.empty?
-      if is_ci?
-        udid = sh("xcrun simctl list devices available 'iPhone' | grep -Eo '[A-F0-9-]{36}' | head -n 1").strip
-        if udid.nil? || udid.empty?
-          UI.user_error!("CI環境で利用可能なiPhoneシミュレータのUDIDが取得できませんでした")
-        end
-      else
-        UI.user_error!("UDIDが指定されていません。justfileからudidオプションを渡してください")
-      end
+  def simulator_destination_from(options)
+    destination = options[:destination].to_s.strip
+    return destination unless destination.empty?
+
+    udid = options[:udid].to_s.strip
+    return "platform=iOS Simulator,id=#{udid}" unless udid.empty?
+
+    DEFAULT_SIMULATOR_DESTINATION
+  end
+
+  def print_latest_xcodebuild_log(buildlog_path:, lines:)
+    log_dir = File.expand_path(buildlog_path.to_s, Dir.pwd)
+    log_file = Dir.glob(File.join(log_dir, "**", "*.log")).max_by do |path|
+      File.mtime(path)
+    rescue StandardError
+      Time.at(0)
     end
-    Actions.lane_context[:SIMULATOR_UDID] = udid
+
+    if log_file.nil? || !File.file?(log_file)
+      UI.error("Could not find xcodebuild logs under: #{log_dir}")
+      return
+    end
+
+    UI.message("Showing last #{lines} lines from log: #{log_file}")
+    UI.message(File.read(log_file).lines.last(lines).join)
+  rescue StandardError => error
+    UI.error("Failed to read xcodebuild logs under #{log_dir}: #{error}")
   end
 
-  desc "Build with specified configuration"
   def config_paths(configuration)
     case configuration
     when CONFIGURATIONS[:release]
       {
         archive_path: RELEASE_ARCHIVE_PATH,
-        derived_data_path: RELEASE_BUILD_DERIVED_DATA_PATH
+        derived_data_path: RELEASE_BUILD_DERIVED_DATA_PATH,
       }
     when CONFIGURATIONS[:debug]
       {
         archive_path: DEBUG_ARCHIVE_PATH,
-        derived_data_path: DEBUG_BUILD_DERIVED_DATA_PATH
+        derived_data_path: DEBUG_BUILD_DERIVED_DATA_PATH,
       }
     else
-      UI.user_error!("Unknown configuration: #{configuration}. Must be one of #{CONFIGURATIONS.values.join(', ')}")
+      UI.user_error!(
+        "Unknown configuration: #{configuration}. Must be one of #{CONFIGURATIONS.values.join(', ')}"
+      )
     end
   end
 
   private_lane :build_app_with_config do |options|
     configuration = options[:configuration]
-    passed_xcargs = options[:xcargs] || ""
     paths = config_paths(configuration)
-    
-    xcargs_items = [DETERMINISTIC_XCODEBUILD_SETTINGS]
-    xcargs_items << passed_xcargs unless passed_xcargs.empty?
-    xcargs = xcargs_items.join(' ')
 
-    ensure_parent_directory_exists(paths[:archive_path])
-    ensure_directory_exists(paths[:derived_data_path])
-    ensure_directory_exists(BUILD_LOGS_PATH)
-    
+    FileUtils.mkdir_p(File.dirname(paths[:archive_path]))
+    FileUtils.mkdir_p(paths[:derived_data_path])
+    FileUtils.mkdir_p(BUILD_LOGS_PATH)
+
+    passed_xcargs = options[:xcargs].to_s.strip
     build_app(
       project: PROJECT_PATH,
       scheme: SCHEMES[:app],
       configuration: configuration,
-      clean: false,
+      clean: true,
       skip_codesigning: true,
       skip_package_ipa: true,
       derived_data_path: paths[:derived_data_path],
       archive_path: paths[:archive_path],
-      export_team_id: ENV['TEAM_ID'],
+      export_team_id: ENV["TEAM_ID"],
       buildlog_path: BUILD_LOGS_PATH,
       suppress_xcode_output: true,
-      xcargs: xcargs
+      xcargs: passed_xcargs,
     )
   end
 
-  desc "Sign and export archive with specified export method"
   private_lane :sign_archive do |options|
-    export_method = options[:export_method]
-    archive_path = options[:archive_path]
-    configuration = options[:configuration]
-    
-    export_base = case configuration
+    export_base = case options[:configuration]
                   when CONFIGURATIONS[:release] then RELEASE_EXPORT_BASE
                   when CONFIGURATIONS[:debug] then DEBUG_EXPORT_BASE
-                  else UI.user_error!("Unknown configuration: #{configuration}")
+                  else
+                    UI.user_error!("Unknown configuration: #{options[:configuration]}")
                   end
 
     build_app(
       project: PROJECT_PATH,
       scheme: SCHEMES[:app],
-      archive_path: archive_path,
-      export_method: export_method,
+      archive_path: options[:archive_path],
+      export_method: options[:export_method],
       skip_build_archive: true,
-      output_directory: "#{export_base}/#{export_method}",
-      export_team_id: ENV['TEAM_ID']
+      output_directory: File.join(export_base, options[:export_method].to_s),
+      export_team_id: ENV["TEAM_ID"]
     )
   end
 
-  desc "Run test for a given scheme (optionally without building)"
   private_lane :test_with_scheme do |options|
     result_path = File.expand_path(options[:result_path], Dir.pwd)
     sh("rm -rf \"#{result_path}\"")
-    get_simulator_info(options)
-    udid = Actions.lane_context[:SIMULATOR_UDID]
-    
-    configuration = options[:configuration] || CONFIGURATIONS[:debug]
-    derived_data_path = "#{TEST_DERIVED_DATA_PATH}/#{configuration}"
 
-    ensure_parent_directory_exists(result_path)
-    ensure_directory_exists(TEST_RESULTS_PATH)
-    ensure_directory_exists(TEST_DERIVED_DATA_PATH)
-    ensure_directory_exists(derived_data_path)
-    ensure_directory_exists(TEST_LOGS_PATH)
-    
-    passed_xcargs = options[:xcargs] || ""
-    xcargs_items = [DETERMINISTIC_XCODEBUILD_SETTINGS]
-    xcargs_items << passed_xcargs unless passed_xcargs.empty?
-    xcargs = xcargs_items.join(' ')
+    configuration = options[:configuration] || CONFIGURATIONS[:debug]
+    derived_data_path = File.join(TEST_DERIVED_DATA_PATH, configuration)
+
+    FileUtils.mkdir_p(File.dirname(result_path))
+    FileUtils.mkdir_p(TEST_LOGS_PATH)
+    FileUtils.mkdir_p(derived_data_path)
 
     scan_args = {
       project: PROJECT_PATH,
       scheme: options[:scheme],
-      destination: "platform=iOS Simulator,id=#{udid}",
+      destination: simulator_destination_from(options),
       derived_data_path: derived_data_path,
       result_bundle_path: result_path,
       code_coverage: false,
       output_types: "xcresult",
       clean: false,
       buildlog_path: TEST_LOGS_PATH,
-      suppress_xcode_output: true
+      suppress_xcode_output: true,
     }
 
-    scan_args[:xcargs] = xcargs
-    scan_args[:test_without_building] = options[:test_without_building] if options[:test_without_building]
+    passed_xcargs = options[:xcargs].to_s.strip
+    scan_args[:xcargs] = passed_xcargs unless passed_xcargs.empty?
+    scan_args[:test_without_building] = true if options[:test_without_building]
 
     begin
       scan(**scan_args)
       UI.success("✅ Test successful for scheme '#{options[:scheme]}' (output suppressed)")
     rescue => ex
-      log_dir = File.expand_path(scan_args[:buildlog_path], __dir__)
       UI.error("❌ Test failed for scheme '#{options[:scheme]}'")
-
-      # Find the most recent log file in the log directory
-      log_files = Dir.glob(File.join(log_dir, "**", "*.log")).sort_by { |f| File.mtime(f) rescue Time.at(0) }
-      log_path = log_files.last
-
-      if log_path && File.exist?(log_path)
-        UI.message("Showing last 100 lines from log: #{log_path}")
-        UI.message(File.read(log_path).lines.last(100).join)
-      else
-        UI.error("Could not find log file in: #{log_dir}")
-      end
-
+      print_latest_xcodebuild_log(buildlog_path: scan_args[:buildlog_path], lines: 100)
       raise ex
     end
   end
