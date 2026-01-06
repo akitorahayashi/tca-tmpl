@@ -13,6 +13,7 @@
 default_platform(:ios)
 
 require_relative 'config'
+require 'fileutils'
 
 DETERMINISTIC_XCODEBUILD_SETTINGS = [
   "PARALLELIZE_BUILD=NO",
@@ -20,10 +21,22 @@ DETERMINISTIC_XCODEBUILD_SETTINGS = [
   "SKIP_MACRO_VALIDATION=YES",
 ].join(" ").freeze
 
+def ensure_directory_exists(path)
+  FileUtils.mkdir_p(path) unless Dir.exist?(path)
+end
+
+def ensure_parent_directory_exists(path)
+  ensure_directory_exists(File.dirname(path))
+end
+
 before_all do
   # Set the global log path default to the project-local directory
   # This becomes the fallback if buildlog_path is not specified
   ENV["FL_BUILDLOG_PATH"] = LOGS_PATH
+
+  ensure_directory_exists(BUILD_PATH)
+  ensure_directory_exists(LOGS_PATH)
+  ensure_directory_exists(TEST_LOGS_PATH)
 end
 
 platform :ios do
@@ -83,6 +96,11 @@ platform :ios do
 
     get_simulator_info(options)
     udid = Actions.lane_context[:SIMULATOR_UDID]
+
+    ensure_directory_exists(TEST_RESULTS_PATH)
+    ensure_directory_exists(TEST_DERIVED_DATA_PATH)
+    ensure_directory_exists(derived_data_path)
+    ensure_directory_exists(TEST_LOGS_PATH)
     
     scan_args = {
       project: PROJECT_PATH,
@@ -91,7 +109,7 @@ platform :ios do
       derived_data_path: derived_data_path,
       configuration: configuration,
       build_for_testing: true,
-      clean: false,
+      clean: is_ci?,
       buildlog_path: TEST_LOGS_PATH,
       suppress_xcode_output: true
     }
@@ -181,6 +199,10 @@ platform :ios do
     xcargs_items = [DETERMINISTIC_XCODEBUILD_SETTINGS]
     xcargs_items << passed_xcargs unless passed_xcargs.empty?
     xcargs = xcargs_items.join(' ')
+
+    ensure_parent_directory_exists(paths[:archive_path])
+    ensure_directory_exists(paths[:derived_data_path])
+    ensure_directory_exists(BUILD_LOGS_PATH)
     
     build_app(
       project: PROJECT_PATH,
@@ -230,6 +252,12 @@ platform :ios do
     
     configuration = options[:configuration] || CONFIGURATIONS[:debug]
     derived_data_path = "#{TEST_DERIVED_DATA_PATH}/#{configuration}"
+
+    ensure_parent_directory_exists(result_path)
+    ensure_directory_exists(TEST_RESULTS_PATH)
+    ensure_directory_exists(TEST_DERIVED_DATA_PATH)
+    ensure_directory_exists(derived_data_path)
+    ensure_directory_exists(TEST_LOGS_PATH)
     
     passed_xcargs = options[:xcargs] || ""
     xcargs_items = [DETERMINISTIC_XCODEBUILD_SETTINGS]
