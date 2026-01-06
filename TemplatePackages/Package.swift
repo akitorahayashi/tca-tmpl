@@ -31,7 +31,7 @@ let package = Package(
         .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
         .product(name: "Dependencies", package: "swift-dependencies"),
         .product(name: "DependenciesMacros", package: "swift-dependencies"),
-        // TCA transitive dependencies
+        // TCA transitive dependencies - made explicit for Xcode linking stability
         .product(name: "CasePaths", package: "swift-case-paths"),
         .product(name: "CasePathsCore", package: "swift-case-paths"),
         .product(name: "IdentifiedCollections", package: "swift-identified-collections"),
