@@ -81,7 +81,7 @@ platform :ios do
       derived_data_path: File.join(TEST_DERIVED_DATA_PATH, configuration),
       configuration: configuration,
       build_for_testing: true,
-      clean: true,
+      clean: !ENV["CI"],
       buildlog_path: TEST_LOGS_PATH,
       suppress_xcode_output: true,
     }
@@ -241,7 +241,7 @@ platform :ios do
       project: PROJECT_PATH,
       scheme: SCHEMES[:app],
       configuration: configuration,
-      clean: true,
+      clean: !ENV["CI"],
       skip_codesigning: true,
       skip_package_ipa: true,
       derived_data_path: paths[:derived_data_path],
