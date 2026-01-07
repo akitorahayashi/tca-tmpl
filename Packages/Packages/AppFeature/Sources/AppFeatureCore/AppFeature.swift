@@ -1,5 +1,5 @@
 import ComposableArchitecture
-import CounterFeatureDomain
+import CounterFeatureCore
 import Dependencies
 import Foundation
 

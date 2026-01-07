@@ -20,8 +20,8 @@ This is an iOS app template built with SwiftUI and The Composable Architecture (
 - `Tests/UI/`: Black-box UI tests
 
 ### Module Conventions
-Each feature follows a Domain/UI split:
-- `*Domain`: Reducer, state, actions, and dependencies (no SwiftUI imports)
+Each feature follows a Core/UI split:
+- `*Core`: Reducer, state, actions, and dependencies (no SwiftUI imports)
 - `*UI`: SwiftUI views that bind to stores
 
 ## Customization Steps

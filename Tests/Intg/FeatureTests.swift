@@ -1,6 +1,6 @@
-import AppFeatureDomain
+import AppFeatureCore
 import ComposableArchitecture
-import CounterFeatureDomain
+import CounterFeatureCore
 import XCTest
 
 @testable import TemplateApp
