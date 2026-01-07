@@ -81,7 +81,7 @@ platform :ios do
       derived_data_path: derived_data_path,
       configuration: configuration,
       build_for_testing: true,
-      clean: is_ci? ? false : true,
+      clean: true,
       buildlog_path: TEST_LOGS_PATH,
       suppress_xcode_output: true
     }
@@ -224,27 +224,30 @@ platform :ios do
       result_bundle_path: result_path,
       code_coverage: false,
       output_types: "xcresult",
-      clean: is_ci? ? false : true,
-      buildlog_path: TEST_LOGS_PATH,
-      suppress_xcode_output: true
+      clean: false,
+      buildlog_path: TEST_LOGS_PATH
     }
 
     scan_args[:xcargs] = passed_xcargs unless passed_xcargs.empty?
     scan_args[:test_without_building] = options[:test_without_building] if options[:test_without_building]
 
     begin
-      scan_args[:fail_build] = false
+      scan_args[:suppress_xcode_output] = true
+
       scan(**scan_args)
       UI.success("✅ Test successful for scheme '#{options[:scheme]}' (output suppressed)")
+
     rescue => ex
-      log_path = lane_context[SharedValues::SCAN_BUILDLOG_PATH]
-      UI.error("❌ Test failed. Showing last 100 lines from log: #{log_path}")
-      
+      log_path = File.expand_path(scan_args[:buildlog_path], __dir__)
+      UI.error("❌ Test failed for scheme '#{options[:scheme]}'")
+
       if log_path && File.exist?(log_path)
+        UI.message("Showing last 100 lines from log: #{log_path}")
         UI.message(File.read(log_path).lines.last(100).join)
       else
         UI.error("Could not find log file at: #{log_path}")
       end
+
       raise ex
     end
   end
