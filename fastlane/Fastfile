@@ -188,11 +188,12 @@ platform :ios do
       skip_codesigning: true,
       skip_package_ipa: true,
       skip_package_dependencies_resolution: true,
+      disable_package_automatic_updates: true,
       derived_data_path: paths[:derived_data_path],
       archive_path: paths[:archive_path],
       export_team_id: ENV["TEAM_ID"],
       buildlog_path: BUILD_LOGS_PATH,
-      suppress_xcode_output: true,
+      suppress_xcode_output: false,
       xcargs: passed_xcargs,
     )
   end
