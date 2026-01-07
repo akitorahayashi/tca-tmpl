@@ -1,6 +1,8 @@
 # fastlane/lanes/test.rb
 # Test-related lanes and helpers
 
+require 'json'
+
 # === Test Lanes ===
 desc "Build for testing"
 lane :build_for_testing do |options|
@@ -98,33 +100,52 @@ end
 
 # === Private Test Helpers ===
 
+def find_available_iphone_simulator_udid
+  output = sh("xcrun simctl list devices available 'iPhone' -j", log: false)
+  devices_by_runtime = JSON.parse(output)['devices']
+  first_device = devices_by_runtime.values.flatten.first
+  first_device ? first_device['udid'] : ''
+rescue StandardError
+  ""
+end
+
 def simulator_destination_from(options)
   destination = options[:destination].to_s.strip
   return destination unless destination.empty?
 
   udid = options[:udid].to_s.strip
-  return "platform=iOS Simulator,id=#{udid}" unless udid.empty?
-
-  env_destination = ENV["SIMULATOR_DESTINATION"].to_s.strip
-  return env_destination unless env_destination.empty?
-
-  selected_udid = find_available_iphone_simulator_udid
-  if selected_udid.empty?
-    UI.user_error!("Unable to find an available iPhone simulator on this runner.")
+  if udid.empty?
+    if is_ci?
+      udid = find_available_iphone_simulator_udid
+      if udid.nil? || udid.empty?
+        UI.user_error!("Could not get UDID for an available iPhone simulator in the CI environment")
+      end
+    else
+      UI.user_error!("UDID is not specified. Please pass the udid option from the justfile.")
+    end
   end
 
-  UI.message("Using simulator UDID: #{selected_udid}")
-  "platform=iOS Simulator,id=#{selected_udid}"
-end
-
-def find_available_iphone_simulator_udid
-  output = sh("xcrun simctl list devices available 'iPhone'", log: false)
-  output.to_s[/[0-9A-Fa-f-]{36}/].to_s.strip
-rescue StandardError
-  ""
+  "platform=iOS Simulator,id=#{udid}"
 end
 
 def print_latest_xcodebuild_log(buildlog_path:, lines:)
+  log_dir = File.expand_path(buildlog_path.to_s, Dir.pwd)
+  log_file = Dir.glob(File.join(log_dir, "**", "*.log")).max_by do |path|
+    File.mtime(path)
+  rescue StandardError
+    Time.at(0)
+  end
+
+  if log_file.nil? || !File.file?(log_file)
+    UI.error("Could not find xcodebuild logs under: #{log_dir}")
+    return
+  end
+
+  UI.message("Showing last #{lines} lines from log: #{log_file}")
+  UI.message(File.read(log_file).lines.last(lines).join)
+rescue StandardError => error
+  UI.error("Failed to read xcodebuild logs under #{log_dir}: #{error}")
+end
   log_dir = File.expand_path(buildlog_path.to_s, Dir.pwd)
   log_file = Dir.glob(File.join(log_dir, "**", "*.log")).max_by do |path|
     File.mtime(path)
