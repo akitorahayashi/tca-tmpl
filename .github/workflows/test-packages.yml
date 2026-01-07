@@ -13,6 +13,9 @@ jobs:
   # ------------------------------------------------------------------
   generate-matrix:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    timeout-minutes: 10
     outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
     steps:
@@ -40,6 +43,7 @@ jobs:
     runs-on: macos-15
     permissions:
       contents: read
+    timeout-minutes: 30
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -76,6 +80,7 @@ jobs:
     runs-on: macos-15
     permissions:
       contents: read
+    timeout-minutes: 20
     strategy:
       fail-fast: false
       matrix: ${{ fromJson(needs.generate-matrix.outputs.matrix) }}
