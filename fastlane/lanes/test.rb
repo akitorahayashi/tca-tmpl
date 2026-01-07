@@ -104,8 +104,9 @@ def find_available_iphone_simulator_udid
   output = sh("xcrun simctl list devices available 'iPhone' -j", log: false)
   devices_by_runtime = JSON.parse(output)['devices']
   first_device = devices_by_runtime.values.flatten.first
-  first_device ? first_device['udid'] : ''
-rescue StandardError
+  (first_device && first_device['udid']) || ''
+rescue => e
+  UI.verbose("Error finding available iPhone simulator: #{e.class}: #{e.message}")
   ""
 end
 
@@ -129,23 +130,6 @@ def simulator_destination_from(options)
 end
 
 def print_latest_xcodebuild_log(buildlog_path:, lines:)
-  log_dir = File.expand_path(buildlog_path.to_s, Dir.pwd)
-  log_file = Dir.glob(File.join(log_dir, "**", "*.log")).max_by do |path|
-    File.mtime(path)
-  rescue StandardError
-    Time.at(0)
-  end
-
-  if log_file.nil? || !File.file?(log_file)
-    UI.error("Could not find xcodebuild logs under: #{log_dir}")
-    return
-  end
-
-  UI.message("Showing last #{lines} lines from log: #{log_file}")
-  UI.message(File.read(log_file).lines.last(lines).join)
-rescue StandardError => error
-  UI.error("Failed to read xcodebuild logs under #{log_dir}: #{error}")
-end
   log_dir = File.expand_path(buildlog_path.to_s, Dir.pwd)
   log_file = Dir.glob(File.join(log_dir, "**", "*.log")).max_by do |path|
     File.mtime(path)
