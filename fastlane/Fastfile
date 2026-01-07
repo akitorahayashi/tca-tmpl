@@ -74,6 +74,11 @@ platform :ios do
 
     get_simulator_info(options)
     udid = Actions.lane_context[:SIMULATOR_UDID]
+
+    # Resolve package dependencies first to ensure macro plugins are available
+    UI.message("Resolving package dependencies...")
+    sh("cd .. && xcodebuild -resolvePackageDependencies -project #{PROJECT_PATH} -scheme #{SCHEMES[:app]}")
+
     scan_args = {
       project: PROJECT_PATH,
       scheme: SCHEMES[:app],
@@ -170,6 +175,11 @@ platform :ios do
     paths = config_paths(configuration)
 
     passed_xcargs = options[:xcargs] || ""
+
+    # Resolve package dependencies first to ensure macro plugins are available
+    UI.message("Resolving package dependencies...")
+    sh("cd .. && xcodebuild -resolvePackageDependencies -project #{PROJECT_PATH} -scheme #{SCHEMES[:app]}")
+
     build_app(
       project: PROJECT_PATH,
       scheme: SCHEMES[:app],
