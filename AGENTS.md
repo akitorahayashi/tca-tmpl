@@ -10,16 +10,16 @@ This project is an iOS application template built with SwiftUI and The Composabl
 │   └── Packages/
 │       ├── AppFeature/        # Root feature composing child features
 │       │   ├── Sources/
-│       │   │   ├── AppFeatureDomain/   # Reducer, state, actions
+│       │   │   ├── AppFeatureCore/   # Reducer, state, actions
 │       │   │   └── AppFeatureUI/       # SwiftUI views
 │       │   └── Tests/
-│       │       └── AppFeatureDomainTests/
+│       │       └── AppFeatureCoreTests/
 │       └── CounterFeature/    # Sample counter feature
 │           ├── Sources/
-│           │   ├── CounterFeatureDomain/
+│           │   ├── CounterFeatureCore/
 │           │   └── CounterFeatureUI/
 │           └── Tests/
-│               └── CounterFeatureDomainTests/
+│               └── CounterFeatureCoreTests/
 ├── Tests/
 │   ├── Unit/                  # Unit tests for app-level code
 │   ├── Intg/                  # Integration tests with dependency overrides
@@ -39,7 +39,7 @@ This project is an iOS application template built with SwiftUI and The Composabl
     - **Dependencies**: Managed via pointfree `Dependencies` library (`@Dependency`, `DependencyKey`)
     - **Navigation**: Scope-driven composition with `@Presents` for presentation state
 - **Module Structure**:
-    - `*Domain` targets: Reducer, state, actions, dependencies (pure Swift, no SwiftUI)
+    - `*Core` targets: Reducer, state, actions, dependencies (pure Swift, no SwiftUI)
     - `*UI` targets: SwiftUI views that scope stores and render state
 - **Dependency Injection**:
     - `AppDependencies` in the app target configures production dependencies
@@ -67,7 +67,7 @@ This project is an iOS application template built with SwiftUI and The Composabl
 
 ### Workflow & Testing
 - Run `just check` before handoff (formats and lints)
-- Package domain tests validate reducer logic using `TestStore`
+- Package core tests validate reducer logic using `TestStore`
 - Integration tests verify feature composition with mock dependencies
 - If in a sandbox environment, submit changes without forcing test runs
 

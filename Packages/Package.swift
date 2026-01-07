@@ -6,11 +6,11 @@ let package = Package(
   platforms: [.iOS(.v17), .macOS(.v14)],
   products: [
     // App Feature
-    .library(name: "AppFeatureDomain", targets: ["AppFeatureDomain"]),
+    .library(name: "AppFeatureCore", targets: ["AppFeatureCore"]),
     .library(name: "AppFeatureUI", targets: ["AppFeatureUI"]),
 
     // Counter Feature
-    .library(name: "CounterFeatureDomain", targets: ["CounterFeatureDomain"]),
+    .library(name: "CounterFeatureCore", targets: ["CounterFeatureCore"]),
     .library(name: "CounterFeatureUI", targets: ["CounterFeatureUI"]),
   ],
   dependencies: [
@@ -25,9 +25,9 @@ let package = Package(
     // MARK: - App Feature
 
     .target(
-      name: "AppFeatureDomain",
+      name: "AppFeatureCore",
       dependencies: [
-        "CounterFeatureDomain",
+        "CounterFeatureCore",
         .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
         .product(name: "Dependencies", package: "swift-dependencies"),
         .product(name: "DependenciesMacros", package: "swift-dependencies"),
@@ -39,54 +39,54 @@ let package = Package(
         .product(name: "Perception", package: "swift-perception"),
         .product(name: "PerceptionCore", package: "swift-perception"),
       ],
-      path: "Packages/AppFeature/Sources/AppFeatureDomain"
+      path: "Packages/AppFeature/Sources/AppFeatureCore"
     ),
     .target(
       name: "AppFeatureUI",
       dependencies: [
-        "AppFeatureDomain",
+        "AppFeatureCore",
         "CounterFeatureUI",
         .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
       ],
       path: "Packages/AppFeature/Sources/AppFeatureUI"
     ),
     .testTarget(
-      name: "AppFeatureDomainTests",
+      name: "AppFeatureCoreTests",
       dependencies: [
-        "AppFeatureDomain",
+        "AppFeatureCore",
         .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
         .product(name: "Dependencies", package: "swift-dependencies"),
       ],
-      path: "Packages/AppFeature/Tests/AppFeatureDomainTests"
+      path: "Packages/AppFeature/Tests/AppFeatureCoreTests"
     ),
 
     // MARK: - Counter Feature
 
     .target(
-      name: "CounterFeatureDomain",
+      name: "CounterFeatureCore",
       dependencies: [
         .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
         .product(name: "Dependencies", package: "swift-dependencies"),
         .product(name: "DependenciesMacros", package: "swift-dependencies"),
       ],
-      path: "Packages/CounterFeature/Sources/CounterFeatureDomain"
+      path: "Packages/CounterFeature/Sources/CounterFeatureCore"
     ),
     .target(
       name: "CounterFeatureUI",
       dependencies: [
-        "CounterFeatureDomain",
+        "CounterFeatureCore",
         .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
       ],
       path: "Packages/CounterFeature/Sources/CounterFeatureUI"
     ),
     .testTarget(
-      name: "CounterFeatureDomainTests",
+      name: "CounterFeatureCoreTests",
       dependencies: [
-        "CounterFeatureDomain",
+        "CounterFeatureCore",
         .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
         .product(name: "Dependencies", package: "swift-dependencies"),
       ],
-      path: "Packages/CounterFeature/Tests/CounterFeatureDomainTests"
+      path: "Packages/CounterFeature/Tests/CounterFeatureCoreTests"
     ),
   ]
 )

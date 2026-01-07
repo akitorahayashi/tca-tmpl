@@ -1,7 +1,7 @@
 import ComposableArchitecture
 import XCTest
 
-@testable import CounterFeatureDomain
+@testable import CounterFeatureCore
 
 @MainActor
 final class CounterFeatureTests: XCTestCase {

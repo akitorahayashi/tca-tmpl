@@ -1,5 +1,5 @@
 import ComposableArchitecture
-import CounterFeatureDomain
+import CounterFeatureCore
 import SwiftUI
 
 /// The UI for the counter feature, bound to a TCA store.
