@@ -187,6 +187,7 @@ platform :ios do
       clean: true,
       skip_codesigning: true,
       skip_package_ipa: true,
+      skip_package_dependencies_resolution: true,
       derived_data_path: paths[:derived_data_path],
       archive_path: paths[:archive_path],
       export_team_id: ENV["TEAM_ID"],
