@@ -12,17 +12,27 @@
 
 default_platform(:ios)
 
+require "fileutils"
 require_relative "config"
 
 before_all do
   ENV["FL_BUILDLOG_PATH"] = LOGS_PATH
   ENV["FASTLANE_XCODEBUILD_SETTINGS_TIMEOUT"] = "20"
+
+  [
+    BUILD_PATH,
+    LOGS_PATH,
+    TEST_LOGS_PATH,
+    BUILD_LOGS_PATH,
+    TEST_RESULTS_PATH,
+  ].each { |path| FileUtils.mkdir_p(path) }
 end
 
 platform :ios do
   # === Build-only Lanes ===
   desc "Build unsigned debug archive"
   lane :build_debug do |options|
+    options ||= {}
     build_app_with_config(
       configuration: CONFIGURATIONS[:debug],
       xcargs: options[:xcargs]
@@ -31,6 +41,7 @@ platform :ios do
 
   desc "Build unsigned release archive"
   lane :build_release do |options|
+    options ||= {}
     build_app_with_config(
       configuration: CONFIGURATIONS[:release],
       xcargs: options[:xcargs]
@@ -49,6 +60,7 @@ platform :ios do
 
   desc "Sign release archive with specified export method (development, app_store, ad_hoc, enterprise)"
   lane :sign_release do |options|
+    options ||= {}
     sign_archive(
       archive_path: RELEASE_ARCHIVE_PATH,
       export_method: options[:export_method],
@@ -59,96 +71,143 @@ platform :ios do
   # === Test Lanes ===
   desc "Build for testing"
   lane :build_for_testing do |options|
+    options ||= {}
     configuration = options[:configuration] || CONFIGURATIONS[:debug]
-    derived_data_path = "#{TEST_DERIVED_DATA_PATH}/#{configuration}"
-
-    passed_xcargs = options[:xcargs] || ""
-
-    xcargs_items = []
-    if configuration == CONFIGURATIONS[:release]
-      xcargs_items << "ENABLE_TESTABILITY=YES"
-    end
-    
-    xcargs_items << passed_xcargs unless passed_xcargs.empty?
-    xcargs = xcargs_items.join(' ')
-
-    get_simulator_info(options)
-    udid = Actions.lane_context[:SIMULATOR_UDID]
-
-    # Resolve package dependencies first to ensure macro plugins are available
-    UI.message("Resolving package dependencies...")
-    sh("cd .. && xcodebuild -resolvePackageDependencies -project #{PROJECT_PATH} -scheme #{SCHEMES[:app]} -derivedDataPath #{derived_data_path}")
 
     scan_args = {
       project: PROJECT_PATH,
       scheme: SCHEMES[:app],
-      destination: "platform=iOS Simulator,id=#{udid}",
-      derived_data_path: derived_data_path,
+      destination: simulator_destination_from(options),
+      derived_data_path: File.join(TEST_DERIVED_DATA_PATH, configuration),
       configuration: configuration,
       build_for_testing: true,
-      clean: true,
+      clean: !ENV["CI"],
       buildlog_path: TEST_LOGS_PATH,
-      suppress_xcode_output: true
+      suppress_xcode_output: true,
     }
-    scan_args[:xcargs] = xcargs unless xcargs.empty?
 
-    scan(**scan_args)
+    passed_xcargs = options[:xcargs].to_s.strip
+    passed_xcargs += " -skipMacroValidation" if ENV["CI"]
+    scan_args[:xcargs] = passed_xcargs unless passed_xcargs.empty?
+
+    begin
+      scan(**scan_args)
+      UI.success("✅ Build-for-testing successful (output suppressed)")
+    rescue => ex
+      UI.error("❌ Build-for-testing failed for scheme '#{SCHEMES[:app]}'")
+      print_latest_xcodebuild_log(buildlog_path: scan_args[:buildlog_path], lines: 200)
+      raise ex
+    end
   end
 
   desc "Run unit tests"
   lane :unit_test do |options|
-    test_with_scheme(scheme: SCHEMES[:unit_test], result_path: UNIT_TEST_RESULT_PATH, **options)
+    options ||= {}
+    test_with_scheme({ scheme: SCHEMES[:unit_test], result_path: UNIT_TEST_RESULT_PATH }.merge(options))
   end
 
   desc "Run unit tests without building"
   lane :unit_test_without_building do |options|
-    test_with_scheme(scheme: SCHEMES[:unit_test], result_path: UNIT_TEST_RESULT_PATH, test_without_building: true, **options)
+    options ||= {}
+    test_with_scheme(
+      {
+        scheme: SCHEMES[:unit_test],
+        result_path: UNIT_TEST_RESULT_PATH,
+        test_without_building: true,
+      }.merge(options)
+    )
   end
 
   desc "Run integration tests"
   lane :intg_test do |options|
-    test_with_scheme(scheme: SCHEMES[:intg_test], result_path: INTG_TEST_RESULT_PATH, **options)
+    options ||= {}
+    test_with_scheme({ scheme: SCHEMES[:intg_test], result_path: INTG_TEST_RESULT_PATH }.merge(options))
   end
 
   desc "Run integration tests without building"
   lane :intg_test_without_building do |options|
-    test_with_scheme(scheme: SCHEMES[:intg_test], result_path: INTG_TEST_RESULT_PATH, test_without_building: true, **options)
+    options ||= {}
+    test_with_scheme(
+      {
+        scheme: SCHEMES[:intg_test],
+        result_path: INTG_TEST_RESULT_PATH,
+        test_without_building: true,
+      }.merge(options)
+    )
   end
 
   desc "Run UI tests"
   lane :ui_test do |options|
-    test_with_scheme(scheme: SCHEMES[:ui_test], result_path: UI_TEST_RESULT_PATH, **options)
+    options ||= {}
+    test_with_scheme({ scheme: SCHEMES[:ui_test], result_path: UI_TEST_RESULT_PATH }.merge(options))
   end
 
   desc "Run UI tests without building (xcodebuild test-without-building)"
   lane :ui_test_without_building do |options|
-    test_with_scheme(scheme: SCHEMES[:ui_test], result_path: UI_TEST_RESULT_PATH, test_without_building: true, **options)
+    options ||= {}
+    test_with_scheme(
+      {
+        scheme: SCHEMES[:ui_test],
+        result_path: UI_TEST_RESULT_PATH,
+        test_without_building: true,
+      }.merge(options)
+    )
   end
 
   desc "Run all tests (Unit, UI, Intg)"
-  lane :test_all do
-    build_for_testing
-    unit_test_without_building
-    intg_test_without_building
-    ui_test_without_building
+  lane :test_all do |options|
+    options ||= {}
+    build_for_testing(options)
+    unit_test_without_building(options)
+    intg_test_without_building(options)
+    ui_test_without_building(options)
   end
 
   # === Private ===
 
-  desc "Get simulator information based on environment"
-  private_lane :get_simulator_info do |options|
-    udid = options[:udid]
-    if udid.nil? || udid.empty?
-      if is_ci?
-        udid = sh("xcrun simctl list devices available 'iPhone' | grep -Eo '[A-F0-9-]{36}' | head -n 1").strip
-        if udid.nil? || udid.empty?
-          UI.user_error!("CI環境で利用可能なiPhoneシミュレータのUDIDが取得できませんでした")
-        end
-      else
-        UI.user_error!("UDIDが指定されていません。justfileからudidオプションを渡してください")
-      end
+  def simulator_destination_from(options)
+    destination = options[:destination].to_s.strip
+    return destination unless destination.empty?
+
+    udid = options[:udid].to_s.strip
+    return "platform=iOS Simulator,id=#{udid}" unless udid.empty?
+
+    env_destination = ENV["SIMULATOR_DESTINATION"].to_s.strip
+    return env_destination unless env_destination.empty?
+
+    selected_udid = find_available_iphone_simulator_udid
+    if selected_udid.empty?
+      UI.user_error!("Unable to find an available iPhone simulator on this runner.")
     end
-    Actions.lane_context[:SIMULATOR_UDID] = udid
+
+    UI.message("Using simulator UDID: #{selected_udid}")
+    "platform=iOS Simulator,id=#{selected_udid}"
+  end
+
+  def find_available_iphone_simulator_udid
+    output = sh("xcrun simctl list devices available 'iPhone'", log: false)
+    output.to_s[/[0-9A-Fa-f-]{36}/].to_s.strip
+  rescue StandardError
+    ""
+  end
+
+  def print_latest_xcodebuild_log(buildlog_path:, lines:)
+    log_dir = File.expand_path(buildlog_path.to_s, Dir.pwd)
+    log_file = Dir.glob(File.join(log_dir, "**", "*.log")).max_by do |path|
+      File.mtime(path)
+    rescue StandardError
+      Time.at(0)
+    end
+
+    if log_file.nil? || !File.file?(log_file)
+      UI.error("Could not find xcodebuild logs under: #{log_dir}")
+      return
+    end
+
+    UI.message("Showing last #{lines} lines from log: #{log_file}")
+    UI.message(File.read(log_file).lines.last(lines).join)
+  rescue StandardError => error
+    UI.error("Failed to read xcodebuild logs under #{log_dir}: #{error}")
   end
 
   def config_paths(configuration)
@@ -174,26 +233,24 @@ platform :ios do
     configuration = options[:configuration]
     paths = config_paths(configuration)
 
-    passed_xcargs = options[:xcargs] || ""
+    FileUtils.mkdir_p(File.dirname(paths[:archive_path]))
+    FileUtils.mkdir_p(paths[:derived_data_path])
+    FileUtils.mkdir_p(BUILD_LOGS_PATH)
 
-    # Resolve package dependencies first to ensure macro plugins are available
-    UI.message("Resolving package dependencies...")
-    sh("cd .. && xcodebuild -resolvePackageDependencies -project #{PROJECT_PATH} -scheme #{SCHEMES[:app]} -derivedDataPath #{paths[:derived_data_path]}")
-
+    passed_xcargs = options[:xcargs].to_s.strip
+    passed_xcargs += " -skipMacroValidation" if ENV["CI"]
     build_app(
       project: PROJECT_PATH,
       scheme: SCHEMES[:app],
       configuration: configuration,
-      clean: false,
+      clean: !ENV["CI"],
       skip_codesigning: true,
       skip_package_ipa: true,
-      skip_package_dependencies_resolution: true,
-      disable_package_automatic_updates: true,
       derived_data_path: paths[:derived_data_path],
       archive_path: paths[:archive_path],
       export_team_id: ENV["TEAM_ID"],
       buildlog_path: BUILD_LOGS_PATH,
-      suppress_xcode_output: false,
+      suppress_xcode_output: true,
       xcargs: passed_xcargs,
     )
   end
@@ -212,7 +269,7 @@ platform :ios do
       archive_path: options[:archive_path],
       export_method: options[:export_method],
       skip_build_archive: true,
-      output_directory: "#{export_base}/#{options[:export_method]}",
+      output_directory: File.join(export_base, options[:export_method].to_s),
       export_team_id: ENV["TEAM_ID"]
     )
   end
@@ -220,46 +277,38 @@ platform :ios do
   private_lane :test_with_scheme do |options|
     result_path = File.expand_path(options[:result_path], Dir.pwd)
     sh("rm -rf \"#{result_path}\"")
-    get_simulator_info(options)
-    udid = Actions.lane_context[:SIMULATOR_UDID]
-    
+
     configuration = options[:configuration] || CONFIGURATIONS[:debug]
-    derived_data_path = "#{TEST_DERIVED_DATA_PATH}/#{configuration}"
-    
-    passed_xcargs = options[:xcargs] || ""
+    derived_data_path = File.join(TEST_DERIVED_DATA_PATH, configuration)
+
+    FileUtils.mkdir_p(File.dirname(result_path))
+    FileUtils.mkdir_p(TEST_LOGS_PATH)
+    FileUtils.mkdir_p(derived_data_path)
 
     scan_args = {
       project: PROJECT_PATH,
       scheme: options[:scheme],
-      destination: "platform=iOS Simulator,id=#{udid}",
+      destination: simulator_destination_from(options),
       derived_data_path: derived_data_path,
       result_bundle_path: result_path,
       code_coverage: false,
       output_types: "xcresult",
       clean: false,
-      buildlog_path: TEST_LOGS_PATH
+      buildlog_path: TEST_LOGS_PATH,
+      suppress_xcode_output: true,
     }
 
+    passed_xcargs = options[:xcargs].to_s.strip
+    passed_xcargs += " -skipMacroValidation" if ENV["CI"]
     scan_args[:xcargs] = passed_xcargs unless passed_xcargs.empty?
-    scan_args[:test_without_building] = options[:test_without_building] if options[:test_without_building]
+    scan_args[:test_without_building] = true if options[:test_without_building]
 
     begin
-      scan_args[:suppress_xcode_output] = true
-
       scan(**scan_args)
       UI.success("✅ Test successful for scheme '#{options[:scheme]}' (output suppressed)")
-
     rescue => ex
-      log_path = File.expand_path(scan_args[:buildlog_path], __dir__)
       UI.error("❌ Test failed for scheme '#{options[:scheme]}'")
-
-      if log_path && File.exist?(log_path)
-        UI.message("Showing last 100 lines from log: #{log_path}")
-        UI.message(File.read(log_path).lines.last(100).join)
-      else
-        UI.error("Could not find log file at: #{log_path}")
-      end
-
+      print_latest_xcodebuild_log(buildlog_path: scan_args[:buildlog_path], lines: 100)
       raise ex
     end
   end
