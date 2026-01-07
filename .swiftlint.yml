@@ -29,6 +29,7 @@ excluded:
   - build
   - xcbuild
   - references
+  - reference
 
 #-------------------------------------------------------------------
 # Rule Configuration

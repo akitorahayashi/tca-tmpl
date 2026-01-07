@@ -6,10 +6,18 @@ set dotenv-load
 
 # --- PROJECT SETTINGS ---
 PROJECT_FILE := "TemplateApp.xcodeproj"
+APP_BUNDLE_ID := "com.akitorahayashi.TemplateApp"
 
 # --- PROJECT SPECIFIC PATHS ---
 HOME_DIR := env("HOME")
-SWIFTPM_CACHE_PATH := env("SWIFTPM_CACHE_PATH", HOME_DIR + "/Library/Caches/org.swift.swiftpm")
+TEST_DERIVED_DATA_PATH := "fastlane/build/test-results/DerivedData"
+DEBUG_APP_PATH := TEST_DERIVED_DATA_PATH + "/Debug/Build/Products/Debug-iphonesimulator/TemplateApp.app"
+RELEASE_APP_PATH := TEST_DERIVED_DATA_PATH + "/Release/Build/Products/Release-iphonesimulator/TemplateApp.app"
+
+# --- SWIFT PACKAGE OPTIONS ---
+SWIFTPM_ROOT := env("SWIFTPM_ROOT", HOME_DIR + "/.cache/swiftpm/tca-tmpl")
+SWIFTPM_DEP_CACHE := SWIFTPM_ROOT + "/dependencies"
+SWIFTPM_ARTIFACT_ROOT := SWIFTPM_ROOT + "/artifacts"
 
 # --- ENVIRONMENT VARIABLES ---
 TEAM_ID := env("TEAM_ID", "")
@@ -56,18 +64,48 @@ setup:
 
 # Generate Xcode project
 gen-pj:
-    @echo "Generating Xcode project with TEAM_ID: {{TEAM_ID}}"
-    @TEAM_ID={{TEAM_ID}} envsubst < project.envsubst.yml > project.yml
-    @mint run xcodegen generate
+    #!/usr/bin/env bash
+    set -e
+    echo "Generating Xcode project with TEAM_ID: {{TEAM_ID}}"
+    # First, do envsubst for TEAM_ID
+    TEAM_ID={{TEAM_ID}} envsubst < project.envsubst.yml > project.yml.tmp
+    # Read dependencies and indent them for embedding (6 spaces for YAML array items under dependencies:)
+    DEPS_FILE=$(mktemp)
+    sed 's/^/      /' dependencies.yml > "$DEPS_FILE"
+    # Replace all placeholder occurrences with the dependencies content
+    awk -v depsfile="$DEPS_FILE" '
+        /# __DEPENDENCIES__/ {
+            while ((getline line < depsfile) > 0) print line
+            close(depsfile)
+            next
+        }
+        { print }
+    ' project.yml.tmp > project.yml
+    rm -f project.yml.tmp "$DEPS_FILE"
+    mint run xcodegen generate
+
+# Resolve Swift package dependencies
+resolve-packages cache_path=SWIFTPM_DEP_CACHE:
+    #!/usr/bin/env bash
+    set -e
+    echo "Using dependency cache at: {{cache_path}}"
+    mkdir -p "{{cache_path}}"
+    echo "🔄 Resolving dependencies for TemplatePackages..."
+    swift package resolve --package-path TemplatePackages --cache-path "{{cache_path}}"
+    echo "✅ Package resolution complete."
+    echo "Resolving Xcode project dependencies..."
+    xcodebuild -resolvePackageDependencies -project {{PROJECT_FILE}}
+    echo "✅ Xcode dependencies resolved."
 
 # Reset SwiftPM cache, dependencies, and build artifacts
 resolve-pkg:
     @echo "Removing SwiftPM build and cache..."
     @rm -rf .build
-    @rm -rf {{SWIFTPM_CACHE_PATH}}
+    @rm -rf TemplatePackages/.build
+    @rm -rf {{SWIFTPM_ROOT}}
     @echo "✅ SwiftPM build and cache removed."
     @echo "Resolving Swift package dependencies..."
-    @xcodebuild -resolvePackageDependencies -project {{PROJECT_FILE}}
+    @just resolve-packages
     @echo "✅ Package dependencies resolved."
 
 # Open project in Xcode
@@ -137,15 +175,35 @@ clean:
     @rm -rf fastlane/logs
     @rm -rf fastlane/report.xml
     @rm -rf .build
-    @rm -rf {{SWIFTPM_CACHE_PATH}}
+    @rm -rf TemplatePackages/.build
+    @rm -rf {{SWIFTPM_ROOT}}
 
 # ==============================================================================
 # Test Interface (Delegated to fastlane module)
 # ==============================================================================
 
-# Run all tests (unit, integration, UI)
+# Run all tests (unit, integration, UI, and package tests)
 test:
+    @just package-test
     @just fastlane::test-all
+
+# Run Swift package tests
+package-test:
+    @echo "Running Swift package tests..."
+    @swift test --package-path TemplatePackages
+    @echo "✅ Package tests complete."
+
+# Run a specific package test target
+# Usage: just pkg-test <target> [use_cache] [extra_args]
+pkg-test target use_cache="false" extra_args="":
+    #!/usr/bin/env bash
+    set -e
+    echo "🧪 Running tests for {{target}}..."
+    CACHE_ARGS=""
+    if [ "{{use_cache}}" = "true" ]; then
+        CACHE_ARGS="--cache-path {{SWIFTPM_DEP_CACHE}} --scratch-path {{SWIFTPM_ARTIFACT_ROOT}}/TemplatePackages"
+    fi
+    swift test --package-path TemplatePackages --filter "{{target}}" $CACHE_ARGS {{extra_args}}
 
 # Run unit tests
 unit-test:

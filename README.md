@@ -1,6 +1,25 @@
 ## Overview
 
-This is an iOS app template based on SwiftUI.
+This is an iOS app template built with SwiftUI and The Composable Architecture (TCA). The architecture follows a package-modularized structure where feature logic lives in a local Swift package.
+
+## Architecture
+
+### TCA-First Design
+- **Reducers** manage all business logic using `@Reducer` macro
+- **Views** bind to stores via `StoreOf<Feature>` and `@Bindable`
+- **Dependencies** use the pointfree `Dependencies` library for injection
+- **Navigation** follows scope-driven composition patterns
+
+### Package Structure
+- `TemplateApp/`: Application shell with resources and dependency bootstrap
+- `TemplatePackages/`: Local Swift package containing feature modules
+  - `AppFeature/`: Root feature composing child features
+  - `CounterFeature/`: Sample counter feature demonstrating TCA patterns
+
+### Module Conventions
+Each feature follows a Domain/UI split:
+- `*Domain`: Reducer, state, actions, and dependencies (no SwiftUI imports)
+- `*UI`: SwiftUI views that bind to stores
 
 ## Customization Steps
 
@@ -8,90 +27,75 @@ When starting a new project from this template, follow these steps to set projec
 
 ### 1. Change Project Name and Directory
 
-First, in the project root directory, change the template placeholder names to your new project name. For example, if your new project name is `NewApp`, change as follows:
+In the project root directory, change the template placeholder names to your new project name. For example, if your new project name is `NewApp`:
 
-1. `TemplateApp` -> `NewApp`
-2. `TemplateAppTests` -> `NewAppTests`
-3. `TemplateAppUITests` -> `NewAppUITests`
+1. `TemplateApp` → `NewApp`
+2. `TemplateAppTests` → `NewAppTests`
+3. `TemplateAppIntgTests` → `NewAppIntgTests`
+4. `TemplateAppUITests` → `NewAppUITests`
+5. `TemplatePackages` → `NewAppPackages`
 
-### 3. Configure Environment Variables
+### 2. Configure Environment Variables
 
 Copy `.env.example` to `.env` and update the values as needed.
 
 #### Simulator Configuration
 
-This project uses separate simulators for development and testing to enable parallel workflows:
+This project uses separate simulators for development and testing:
 
-- `DEV_SIMULATOR_UDID`: UDID of the simulator used for app execution, debugging, and UI verification (used by `just boot`, `just run-debug`, etc.)
-- `TEST_SIMULATOR_UDID`: UDID of the simulator used for automated test execution (used by `just test`, `just unit-test`, etc.)
+- `DEV_SIMULATOR_UDID`: UDID of the simulator used for app execution and debugging
+- `TEST_SIMULATOR_UDID`: UDID of the simulator used for automated test execution
 
 To find your simulator UDID, run `xcrun simctl list devices` and copy the UUID of the desired simulator.
 
-**Note:** Both variables must be set for full functionality. If you use the same simulator for both, set the same UDID for both variables.
+### 3. Update Configuration Files
 
-Next, update the values in various configuration files to match your new project name.
-
-#### project.yml
+#### project.envsubst.yml
 
 This is the source file for the Xcode project (`.xcodeproj`).
 
-| Setting Item | Current Value | Change Example (`NewApp`) | Details |
-|---|---|---|---|
-| `name` | `TemplateApp` | `NewApp` | Project name. Match it with the directory name. |
-| `bundleIdPrefix` | `com.akitorahayashi` | `com.yourcompany` | Change to your bundle ID prefix. |
-| `targets.TemplateApp.sources` | `[TemplateApp]` | `[NewApp]` | Specify the source directory name for the main app. |
-| `targets.TemplateAppTests.sources` | `[TemplateAppTests]` | `[NewAppTests]` | Specify the source directory name for unit tests. |
-| `targets.TemplateAppUITests.sources` | `[TemplateAppUITests]` | `[NewAppUITests]` | Specify the source directory name for UI tests. |
-| `schemes` | `TemplateApp`, `TemplateAppTests` ... | `NewApp`, `NewAppTests` ... | Change scheme names to match the new project name. |
-
-**Note:** After changing `project.yml`, be sure to run `just gen-proj` to regenerate the `.xcodeproj` file.
-
-#### Info.plist Files
-
-In the `Info.plist` files for each target, the bundle ID (`CFBundleIdentifier`) must match the value set in `project.yml`.
-
-| File | Key to Update | Example Changed Value (`NewApp`) |
+| Setting Item | Current Value | Change Example |
 |---|---|---|
-| `TemplateApp/Info.plist` | `CFBundleIdentifier` | `com.yourcompany.NewApp` |
-| `TemplateAppTests/Info.plist` | `CFBundleIdentifier` | `com.yourcompany.NewAppTests` |
-| `TemplateAppUITests/Info.plist` | `CFBundleIdentifier` | `com.yourcompany.NewAppUITests` |
+| `name` | `TemplateApp` | `NewApp` |
+| `packages.TemplatePackages.path` | `TemplatePackages` | `NewAppPackages` |
+| `PRODUCT_BUNDLE_IDENTIFIER` | `com.akitorahayashi.TemplateApp` | `com.yourcompany.NewApp` |
+
+**Note:** After changing `project.envsubst.yml`, run `just gen-pj` to regenerate the project.
+
+#### dependencies.yml
+
+Update package references from `TemplatePackages` to your new package name.
+
+#### TemplatePackages/Package.swift
+
+Update the package name and all target/product names.
 
 #### justfile
 
-This file defines development commands.
-
-| Variable Name | Current Value | Change Example (`NewApp`) | Details |
-|---|---|---|---|
-| `PROJECT_FILE` | `"TemplateApp.xcodeproj"` | `"NewApp.xcodeproj"` | Update to the `name` from `project.yml` with `.xcodeproj` appended. |
-| `APP_BUNDLE_ID` | `"com.akitorahayashi.TemplateApp"` | `"com.yourcompany.NewApp"` | Update to the combination of `bundleIdPrefix` and `name` from `project.yml`. |
-| `DEBUG_APP_PATH` | `".../Products/Debug-iphonesimulator/TemplateApp.app"` | `".../Products/Debug-iphonesimulator/NewApp.app"` | Update the app name in the path. |
-| `RELEASE_APP_PATH` | `".../Products/Release-iphonesimulator/TemplateApp.app"` | `".../Products/Release-iphonesimulator/NewApp.app"` | Update the app name in the path. |
+| Variable Name | Current Value | Change Example |
+|---|---|---|
+| `PROJECT_FILE` | `"TemplateApp.xcodeproj"` | `"NewApp.xcodeproj"` |
+| `APP_BUNDLE_ID` | `"com.akitorahayashi.TemplateApp"` | `"com.yourcompany.NewApp"` |
 
 #### fastlane/config.rb
 
-This is the configuration file for `fastlane`. It defines specific behaviors for building and testing.
-
-| Constant Name | Current Value | Change Example (`NewApp`) | Details |
-|---|---|---|---|
-| `PROJECT_PATH` | `"TemplateApp.xcodeproj"` | `"NewApp.xcodeproj"` | Update the project file name. |
-| `SCHEMES[:app]` | `"TemplateApp"` | `"NewApp"` | Update the scheme name for the main app. |
-| `SCHEMES[:unit_test]` | `"TemplateAppTests"` | `"NewAppTests"` | Update the scheme name for unit tests. |
-| `SCHEMES[:ui_test]` | `"TemplateAppUITests"` | `"NewAppUITests"` | Update the scheme name for UI tests. |
-| `DEBUG_ARCHIVE_PATH` | `.../archive/TemplateApp.xcarchive` | `.../archive/NewApp.xcarchive` | Update the app name in the archive path. |
-| `RELEASE_ARCHIVE_PATH` | `.../archive/TemplateApp.xcarchive` | `.../archive/NewApp.xcarchive` | Update the app name in the archive path. |
-
-#### .swiftlint.yml
-
-This is the configuration file for SwiftLint.
-
-| Setting Item | Current Value | Change Example (`NewApp`) | Details |
-|---|---|---|---|
-| `included` | `- TemplateApp` | `- NewApp` | Update the directory name for linting. |
-| | `- TemplateAppTests` | `- NewAppTests` | |
-| | `- TemplateAppUITests` | `- NewAppUITests` | |
-
-### .github/workflows/ci-cd-pipeline.yml
-
-| Setting Item | Current Value | Details |
+| Constant Name | Current Value | Change Example |
 |---|---|---|
-| `name` | `Template App CI/CD Pipeline` | Display name for the GitHub Actions workflow. Change to match the project name. |
+| `PROJECT_PATH` | `"TemplateApp.xcodeproj"` | `"NewApp.xcodeproj"` |
+| `SCHEMES[:app]` | `"TemplateApp"` | `"NewApp"` |
+| `SCHEMES[:unit_test]` | `"TemplateAppTests"` | `"NewAppTests"` |
+| `SCHEMES[:ui_test]` | `"TemplateAppUITests"` | `"NewAppUITests"` |
+
+## Development Commands
+
+| Command | Description |
+|---|---|
+| `just setup` | Initialize project: install dependencies and generate project |
+| `just gen-pj` | Regenerate Xcode project from templates |
+| `just check` | Format and lint code |
+| `just test` | Run all tests (package + Xcode) |
+| `just package-test` | Run Swift package tests only |
+| `just unit-test` | Run Xcode unit tests |
+| `just intg-test` | Run integration tests |
+| `just ui-test` | Run UI tests |
+| `just clean` | Remove build artifacts and caches |

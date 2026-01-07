@@ -1,0 +1,11 @@
+# App Feature
+- package: TemplatePackages
+  product: AppFeatureDomain
+- package: TemplatePackages
+  product: AppFeatureUI
+
+# Counter Feature
+- package: TemplatePackages
+  product: CounterFeatureDomain
+- package: TemplatePackages
+  product: CounterFeatureUI
