@@ -26,7 +26,7 @@ jobs:
 
       - name: Extract Test Targets
         id: set-matrix
-        working-directory: TemplatePackages
+        working-directory: Packages
         run: |
           # Output definition info as JSON with swift package dump-package
           # Use jq to extract only targets with type == "test"
@@ -60,8 +60,8 @@ jobs:
           echo "🏗️ Building all test targets..."
           mkdir -p "$SWIFTPM_ROOT/artifacts"
           swift build --build-tests \
-            --package-path TemplatePackages \
-            --scratch-path "$SWIFTPM_ROOT/artifacts/TemplatePackages"
+            --package-path Packages \
+            --scratch-path "$SWIFTPM_ROOT/artifacts/Packages"
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
@@ -106,7 +106,7 @@ jobs:
         run: |
           echo "🧪 Running tests for ${{ matrix.target }}..."
           swift test \
-            --package-path TemplatePackages \
+            --package-path Packages \
             --filter "${{ matrix.target }}" \
             --skip-build \
-            --scratch-path "$SWIFTPM_ROOT/artifacts/TemplatePackages"
+            --scratch-path "$SWIFTPM_ROOT/artifacts/Packages"
