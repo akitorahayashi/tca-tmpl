@@ -31,12 +31,5 @@ jobs:
           generate_project: true
           setup_ruby: true
 
-      - name: Resolve Swift packages
-        run: |
-          echo "🔄 Resolving Swift package dependencies..."
-          mkdir -p fastlane/build/release/archive/DerivedData
-          xcodebuild -resolvePackageDependencies -project TemplateApp.xcodeproj -scheme TemplateApp -derivedDataPath fastlane/build/release/archive/DerivedData
-          echo "✅ Package resolution complete."
-
       - name: Build Unsigned Release Version
         run: just build-release
