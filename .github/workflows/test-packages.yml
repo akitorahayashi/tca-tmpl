@@ -57,9 +57,9 @@ jobs:
           path: |
             ${{ env.SWIFTPM_ROOT }}/dependencies
             ${{ env.SWIFTPM_ROOT }}/artifacts
-          key: ${{ runner.os }}-swiftpm-${{ hashFiles('TemplatePackages/Package.resolved') }}
+          key: ${{ runner.os }}-xcode26-swiftpm-${{ hashFiles('TemplatePackages/Package.resolved') }}
           restore-keys: |
-            ${{ runner.os }}-swiftpm-
+            ${{ runner.os }}-xcode26-swiftpm-
 
       - name: Build All Tests
         run: |
@@ -113,9 +113,9 @@ jobs:
         with:
           path: |
             ${{ env.SWIFTPM_ROOT }}/dependencies
-          key: ${{ runner.os }}-swiftpm-${{ hashFiles('TemplatePackages/Package.resolved') }}
+          key: ${{ runner.os }}-xcode26-swiftpm-${{ hashFiles('TemplatePackages/Package.resolved') }}
           restore-keys: |
-            ${{ runner.os }}-swiftpm-
+            ${{ runner.os }}-xcode26-swiftpm-
 
       - name: Run Test Target (${{ matrix.target }})
         run: |
