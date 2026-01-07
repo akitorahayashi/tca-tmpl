@@ -90,8 +90,8 @@ resolve-packages cache_path=SWIFTPM_DEP_CACHE:
     set -e
     echo "Using dependency cache at: {{cache_path}}"
     mkdir -p "{{cache_path}}"
-    echo "🔄 Resolving dependencies for TemplatePackages..."
-    swift package resolve --package-path TemplatePackages --cache-path "{{cache_path}}"
+    echo "🔄 Resolving dependencies for Packages..."
+    swift package resolve --package-path Packages --cache-path "{{cache_path}}"
     echo "✅ Package resolution complete."
     echo "Resolving Xcode project dependencies..."
     xcodebuild -resolvePackageDependencies -project {{PROJECT_FILE}}
@@ -101,7 +101,7 @@ resolve-packages cache_path=SWIFTPM_DEP_CACHE:
 resolve-pkg:
     @echo "Removing SwiftPM build and cache..."
     @rm -rf .build
-    @rm -rf TemplatePackages/.build
+    @rm -rf Packages/.build
     @rm -rf {{SWIFTPM_ROOT}}
     @echo "✅ SwiftPM build and cache removed."
     @echo "Resolving Swift package dependencies..."
@@ -175,7 +175,7 @@ clean:
     @rm -rf fastlane/logs
     @rm -rf fastlane/report.xml
     @rm -rf .build
-    @rm -rf TemplatePackages/.build
+    @rm -rf Packages/.build
     @rm -rf {{SWIFTPM_ROOT}}
 
 # ==============================================================================
@@ -190,7 +190,7 @@ test:
 # Run Swift package tests
 package-test:
     @echo "Running Swift package tests..."
-    @swift test --package-path TemplatePackages
+    @swift test --package-path Packages
     @echo "✅ Package tests complete."
 
 # Run a specific package test target
@@ -201,9 +201,9 @@ pkg-test target use_cache="false" extra_args="":
     echo "🧪 Running tests for {{target}}..."
     CACHE_ARGS=""
     if [ "{{use_cache}}" = "true" ]; then
-        CACHE_ARGS="--cache-path {{SWIFTPM_DEP_CACHE}} --scratch-path {{SWIFTPM_ARTIFACT_ROOT}}/TemplatePackages"
+        CACHE_ARGS="--cache-path {{SWIFTPM_DEP_CACHE}} --scratch-path {{SWIFTPM_ARTIFACT_ROOT}}/Packages"
     fi
-    swift test --package-path TemplatePackages --filter "{{target}}" $CACHE_ARGS {{extra_args}}
+    swift test --package-path Packages --filter "{{target}}" $CACHE_ARGS {{extra_args}}
 
 # Run unit tests
 unit-test:

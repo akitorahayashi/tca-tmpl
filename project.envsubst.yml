@@ -25,17 +25,17 @@ settings:
       SWIFT_OPTIMIZATION_LEVEL: "-O"
 
 packages:
-  TemplatePackages:
-    path: TemplatePackages
+  Packages:
+    path: Packages
 
 targets:
   TemplateApp:
     type: application
     platform: iOS
     sources:
-      - path: TemplateApp
+      - path: App
     resources:
-      - path: TemplateApp/Resources
+      - path: App/Resources
     dependencies:
       # __DEPENDENCIES__
     settings:
@@ -47,7 +47,7 @@ targets:
           ENABLE_TESTABILITY: "YES"
         Release: {}
     info:
-      path: TemplateApp/Info.plist
+      path: App/Info.plist
       properties:
         CFBundleName: $(PRODUCT_NAME)
         CFBundleIdentifier: $(PRODUCT_BUNDLE_IDENTIFIER)
@@ -61,7 +61,7 @@ targets:
     type: bundle.unit-test
     platform: iOS
     sources:
-      - TemplateAppTests
+      - Tests/Unit
     dependencies:
       - target: TemplateApp
       # __DEPENDENCIES__
@@ -71,13 +71,13 @@ targets:
         GENERATE_INFOPLIST_FILE: "YES"
         SWIFT_ENABLE_EXPLICIT_MODULES: "NO"
     info:
-      path: TemplateAppTests/Info.plist
+      path: Tests/Unit/Info.plist
 
   TemplateAppIntgTests:
     type: bundle.unit-test
     platform: iOS
     sources:
-      - TemplateAppIntgTests
+      - Tests/Intg
     dependencies:
       - target: TemplateApp
       # __DEPENDENCIES__
@@ -87,13 +87,13 @@ targets:
         GENERATE_INFOPLIST_FILE: "YES"
         SWIFT_ENABLE_EXPLICIT_MODULES: "NO"
     info:
-      path: TemplateAppIntgTests/Info.plist
+      path: Tests/Intg/Info.plist
 
   TemplateAppUITests:
     type: bundle.ui-testing
     platform: iOS
     sources:
-      - TemplateAppUITests
+      - Tests/UI
     dependencies:
       - target: TemplateApp
     settings:
@@ -102,7 +102,7 @@ targets:
         GENERATE_INFOPLIST_FILE: "YES"
         SWIFT_ENABLE_EXPLICIT_MODULES: "NO"
     info:
-      path: TemplateAppUITests/Info.plist
+      path: Tests/UI/Info.plist
 
 schemes:
   TemplateApp:

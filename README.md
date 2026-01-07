@@ -11,10 +11,13 @@ This is an iOS app template built with SwiftUI and The Composable Architecture (
 - **Navigation** follows scope-driven composition patterns
 
 ### Package Structure
-- `TemplateApp/`: Application shell with resources and dependency bootstrap
-- `TemplatePackages/`: Local Swift package containing feature modules
+- `App/`: Application shell with resources and dependency bootstrap
+- `Packages/`: Local Swift package containing feature modules
   - `AppFeature/`: Root feature composing child features
   - `CounterFeature/`: Sample counter feature demonstrating TCA patterns
+- `Tests/Unit/`: Unit tests for app-level code
+- `Tests/Intg/`: Integration tests with dependency overrides
+- `Tests/UI/`: Black-box UI tests
 
 ### Module Conventions
 Each feature follows a Domain/UI split:
@@ -29,11 +32,11 @@ When starting a new project from this template, follow these steps to set projec
 
 In the project root directory, change the template placeholder names to your new project name. For example, if your new project name is `NewApp`:
 
-1. `TemplateApp` → `NewApp`
-2. `TemplateAppTests` → `NewAppTests`
-3. `TemplateAppIntgTests` → `NewAppIntgTests`
-4. `TemplateAppUITests` → `NewAppUITests`
-5. `TemplatePackages` → `NewAppPackages`
+1. `App` → `App` (no change needed)
+2. `Tests/Unit` → `Tests/Unit` (no change needed)
+3. `Tests/Intg` → `Tests/Intg` (no change needed)
+4. `Tests/UI` → `Tests/UI` (no change needed)
+5. `Packages` → `Packages` (no change needed)
 
 ### 2. Configure Environment Variables
 
@@ -57,16 +60,16 @@ This is the source file for the Xcode project (`.xcodeproj`).
 | Setting Item | Current Value | Change Example |
 |---|---|---|
 | `name` | `TemplateApp` | `NewApp` |
-| `packages.TemplatePackages.path` | `TemplatePackages` | `NewAppPackages` |
+| `packages.Packages.path` | `Packages` | `Packages` |
 | `PRODUCT_BUNDLE_IDENTIFIER` | `com.akitorahayashi.TemplateApp` | `com.yourcompany.NewApp` |
 
 **Note:** After changing `project.envsubst.yml`, run `just gen-pj` to regenerate the project.
 
 #### dependencies.yml
 
-Update package references from `TemplatePackages` to your new package name.
+Update package references if you rename the package.
 
-#### TemplatePackages/Package.swift
+#### Packages/Package.swift
 
 Update the package name and all target/product names.
 
