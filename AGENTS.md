@@ -4,9 +4,9 @@ This project is an iOS application template built with SwiftUI and The Composabl
 # Directory Structure
 ```
 .
-├── TemplateApp/               # Application shell with resources and dependency bootstrap
+├── App/                       # Application shell with resources and dependency bootstrap
 │   └── Dependencies/          # App-level dependency configuration
-├── TemplatePackages/          # Local Swift package containing feature modules
+├── Packages/                  # Local Swift package containing feature modules
 │   └── Packages/
 │       ├── AppFeature/        # Root feature composing child features
 │       │   ├── Sources/
@@ -20,9 +20,10 @@ This project is an iOS application template built with SwiftUI and The Composabl
 │           │   └── CounterFeatureUI/
 │           └── Tests/
 │               └── CounterFeatureDomainTests/
-├── TemplateAppTests/          # Unit tests for app-level code
-├── TemplateAppIntgTests/      # Integration tests with dependency overrides
-├── TemplateAppUITests/        # Black-box UI tests
+├── Tests/
+│   ├── Unit/                  # Unit tests for app-level code
+│   ├── Intg/                  # Integration tests with dependency overrides
+│   └── UI/                    # Black-box UI tests
 ├── fastlane/                  # Automation scripts for building, testing, and signing
 ├── justfile                   # Command runner configuration for project automation
 ├── project.envsubst.yml       # XcodeGen template for project generation

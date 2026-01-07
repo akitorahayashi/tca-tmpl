@@ -2,7 +2,7 @@
 import PackageDescription
 
 let package = Package(
-  name: "TemplatePackages",
+  name: "Packages",
   platforms: [.iOS(.v17), .macOS(.v14)],
   products: [
     // App Feature
