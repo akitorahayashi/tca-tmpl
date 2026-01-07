@@ -51,23 +51,12 @@ jobs:
         with:
           xcode-version: '26.0'
 
-      - name: Cache SwiftPM dependencies
-        uses: actions/cache@v4
-        with:
-          path: |
-            ${{ env.SWIFTPM_ROOT }}/dependencies
-            ${{ env.SWIFTPM_ROOT }}/artifacts
-          key: ${{ runner.os }}-xcode26-swiftpm-${{ hashFiles('TemplatePackages/Package.resolved') }}
-          restore-keys: |
-            ${{ runner.os }}-xcode26-swiftpm-
-
       - name: Build All Tests
         run: |
           echo "🏗️ Building all test targets..."
-          mkdir -p "$SWIFTPM_ROOT/dependencies" "$SWIFTPM_ROOT/artifacts"
+          mkdir -p "$SWIFTPM_ROOT/artifacts"
           swift build --build-tests \
             --package-path TemplatePackages \
-            --cache-path "$SWIFTPM_ROOT/dependencies" \
             --scratch-path "$SWIFTPM_ROOT/artifacts/TemplatePackages"
 
       - name: Upload build artifacts
@@ -107,15 +96,6 @@ jobs:
         with:
           name: swiftpm-build
           path: ${{ env.SWIFTPM_ROOT }}/artifacts
-
-      - name: Cache SwiftPM dependencies
-        uses: actions/cache@v4
-        with:
-          path: |
-            ${{ env.SWIFTPM_ROOT }}/dependencies
-          key: ${{ runner.os }}-xcode26-swiftpm-${{ hashFiles('TemplatePackages/Package.resolved') }}
-          restore-keys: |
-            ${{ runner.os }}-xcode26-swiftpm-
 
       - name: Run Test Target (${{ matrix.target }})
         run: |
