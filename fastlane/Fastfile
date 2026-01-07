@@ -77,7 +77,7 @@ platform :ios do
 
     # Resolve package dependencies first to ensure macro plugins are available
     UI.message("Resolving package dependencies...")
-    sh("cd .. && xcodebuild -resolvePackageDependencies -project #{PROJECT_PATH} -scheme #{SCHEMES[:app]}")
+    sh("cd .. && xcodebuild -resolvePackageDependencies -project #{PROJECT_PATH} -scheme #{SCHEMES[:app]} -derivedDataPath #{derived_data_path}")
 
     scan_args = {
       project: PROJECT_PATH,
@@ -178,13 +178,13 @@ platform :ios do
 
     # Resolve package dependencies first to ensure macro plugins are available
     UI.message("Resolving package dependencies...")
-    sh("cd .. && xcodebuild -resolvePackageDependencies -project #{PROJECT_PATH} -scheme #{SCHEMES[:app]}")
+    sh("cd .. && xcodebuild -resolvePackageDependencies -project #{PROJECT_PATH} -scheme #{SCHEMES[:app]} -derivedDataPath #{paths[:derived_data_path]}")
 
     build_app(
       project: PROJECT_PATH,
       scheme: SCHEMES[:app],
       configuration: configuration,
-      clean: is_ci? ? false : true,
+      clean: true,
       skip_codesigning: true,
       skip_package_ipa: true,
       derived_data_path: paths[:derived_data_path],
