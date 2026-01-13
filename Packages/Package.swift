@@ -39,7 +39,7 @@ let package = Package(
         .product(name: "Perception", package: "swift-perception"),
         .product(name: "PerceptionCore", package: "swift-perception"),
       ],
-      path: "Packages/AppFeature/Sources/AppFeatureCore"
+      path: "AppFeature/Sources/AppFeatureCore"
     ),
     .target(
       name: "AppFeatureUI",
@@ -48,7 +48,7 @@ let package = Package(
         "CounterFeatureUI",
         .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
       ],
-      path: "Packages/AppFeature/Sources/AppFeatureUI"
+      path: "AppFeature/Sources/AppFeatureUI"
     ),
     .testTarget(
       name: "AppFeatureCoreTests",
@@ -57,7 +57,7 @@ let package = Package(
         .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
         .product(name: "Dependencies", package: "swift-dependencies"),
       ],
-      path: "Packages/AppFeature/Tests/AppFeatureCoreTests"
+      path: "AppFeature/Tests/AppFeatureCoreTests"
     ),
 
     // MARK: - Counter Feature
@@ -69,7 +69,7 @@ let package = Package(
         .product(name: "Dependencies", package: "swift-dependencies"),
         .product(name: "DependenciesMacros", package: "swift-dependencies"),
       ],
-      path: "Packages/CounterFeature/Sources/CounterFeatureCore"
+      path: "CounterFeature/Sources/CounterFeatureCore"
     ),
     .target(
       name: "CounterFeatureUI",
@@ -77,7 +77,7 @@ let package = Package(
         "CounterFeatureCore",
         .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
       ],
-      path: "Packages/CounterFeature/Sources/CounterFeatureUI"
+      path: "CounterFeature/Sources/CounterFeatureUI"
     ),
     .testTarget(
       name: "CounterFeatureCoreTests",
@@ -86,7 +86,7 @@ let package = Package(
         .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
         .product(name: "Dependencies", package: "swift-dependencies"),
       ],
-      path: "Packages/CounterFeature/Tests/CounterFeatureCoreTests"
+      path: "CounterFeature/Tests/CounterFeatureCoreTests"
     ),
   ]
 )
