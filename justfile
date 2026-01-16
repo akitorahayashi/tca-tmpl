@@ -67,21 +67,7 @@ gen-pj:
     #!/usr/bin/env bash
     set -e
     echo "Generating Xcode project with TEAM_ID: {{TEAM_ID}}"
-    # First, do envsubst for TEAM_ID
-    TEAM_ID={{TEAM_ID}} envsubst < project.envsubst.yml > project.yml.tmp
-    # Read dependencies and indent them for embedding (6 spaces for YAML array items under dependencies:)
-    DEPS_FILE=$(mktemp)
-    sed 's/^/      /' dependencies.yml > "$DEPS_FILE"
-    # Replace all placeholder occurrences with the dependencies content
-    awk -v depsfile="$DEPS_FILE" '
-        /# __DEPENDENCIES__/ {
-            while ((getline line < depsfile) > 0) print line
-            close(depsfile)
-            next
-        }
-        { print }
-    ' project.yml.tmp > project.yml
-    rm -f project.yml.tmp "$DEPS_FILE"
+    TEAM_ID={{TEAM_ID}} envsubst < project.envsubst.yml > project.yml
     mint run xcodegen generate
 
 # Resolve Swift package dependencies
@@ -179,39 +165,55 @@ clean:
     @rm -rf {{SWIFTPM_ROOT}}
 
 # ==============================================================================
-# Test Interface (Delegated to fastlane module)
+# Testing
 # ==============================================================================
 
-# Run all tests (unit, integration, UI, and package tests)
-test:
-    @just package-test
-    @just fastlane::test-all
-
-# Run Swift package tests
-package-test:
-    @echo "Running Swift package tests..."
-    @swift test --package-path Packages
-    @echo "✅ Package tests complete."
-
-# Run a specific package test target
-# Usage: just pkg-test <target> [use_cache] [extra_args]
-pkg-test target use_cache="false" extra_args="":
+# Usage: just pkg-test [filter] [ci] [extra_args]
+# filter: Optional regex to filter tests (e.g., "CounterFeatureCoreTests")
+# ci: Optional CI mode flag ("true" limits workers to 1)
+# extra_args: Additional arguments passed to swift test (e.g. "--skip-build")
+pkg-test filter="" ci="false" *extra_args:
     #!/usr/bin/env bash
     set -e
-    echo "🧪 Running tests for {{target}}..."
-    CACHE_ARGS=""
-    if [ "{{use_cache}}" = "true" ]; then
-        CACHE_ARGS="--cache-path {{SWIFTPM_DEP_CACHE}} --scratch-path {{SWIFTPM_ARTIFACT_ROOT}}/Packages"
+    mkdir -p {{SWIFTPM_DEP_CACHE}}
+    mkdir -p {{SWIFTPM_ARTIFACT_ROOT}}
+    echo "🧪 Testing Packages..."
+    
+    ARGS_ARRAY=()
+    for arg in {{extra_args}}; do
+        ARGS_ARRAY+=("$arg")
+    done
+    
+    if [ -n "{{filter}}" ];
+    then
+        ARGS_ARRAY+=(--filter "{{filter}}")
+        echo "📋 Filtering tests with: {{filter}}"
+    else
+        echo "📋 Running all tests"
     fi
-    swift test --package-path Packages --filter "{{target}}" $CACHE_ARGS {{extra_args}}
+    
+    if [ "{{ci}}" = "true" ];
+    then
+        echo "🔧 CI Mode: Running with 1 worker to save resources..."
+        ARGS_ARRAY+=(--parallel --num-workers 1)
+    else
+        echo "🚀 Local Mode: Running in parallel..."
+        WORKERS=$(sysctl -n hw.ncpu)
+        ARGS_ARRAY+=(--parallel --num-workers "$WORKERS")
+    fi
+    
+    echo "Running: swift test ${ARGS_ARRAY[@]}"
+    swift test --package-path Packages \
+               --cache-path "{{SWIFTPM_DEP_CACHE}}" \
+               --scratch-path "{{SWIFTPM_ARTIFACT_ROOT}}/Packages" \
+               "${ARGS_ARRAY[@]}"
+    echo "✅ Tests complete."
 
-# Run unit tests
-unit-test:
-    @just fastlane::unit-test
-
-# Run unit tests without building
-unit-test-without-building:
-    @just fastlane::unit-test-without-building
+# Run all tests (package + Xcode)
+test:
+    @just gen-pj
+    @just pkg-test
+    @just fastlane::test-all
 
 # Run integration tests
 intg-test:

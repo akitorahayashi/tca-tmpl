@@ -51,10 +51,20 @@ This project is an iOS application template built with SwiftUI and The Composabl
     - `dependencies.yml` is embedded into targets via `# __DEPENDENCIES__` placeholder
     - `just gen-pj` processes templates and runs XcodeGen
 - **Testing Strategy**:
-    - **Package Tests**: SwiftPM test targets for reducer behavior validation using TCA `TestStore`
-    - **Unit Tests**: App-level configuration validation
-    - **Integration Tests**: Feature composition with dependency overrides
-    - **UI Tests**: Black-box testing of the application UI
+    - **Package Tests**: SwiftPM test targets for reducer behavior using TCA `TestStore` (mocked dependencies). Run via `just pkg-test`.
+    - **Integration Tests** (`Tests/Intg/`): Real dependency verification (persistence round-trip, actual storage). No TCA imports.
+    - **UI Tests** (`Tests/UI/`): XCUITest for user journeys.
+
+    Boundary principle:
+    - `pkg-test` answers: "Is the logic correct?" (mocked dependencies)
+    - `Tests/Intg` answers: "Do real implementations work?" (real storage)
+    - `Tests/UI` answers: "Does the user experience work?"
+
+### Dependencies
+
+- TCA and related packages are declared only in `Packages/Package.swift`.
+- `project.envsubst.yml` references only `Packages` as a local path; dependencies resolve transitively.
+- This prevents duplicate declarations and ensures consistent version resolution.
 
 ## Development Commands
 - **Check**: `just check` - Formats code with SwiftFormat and lints with SwiftLint
