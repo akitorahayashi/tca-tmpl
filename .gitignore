@@ -33,7 +33,6 @@ Package.resolved
 *.cer
 *.mobileprovision
 /.cursor/
-project.yml
 
 .tmp/
 reference/*

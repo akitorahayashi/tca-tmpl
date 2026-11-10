@@ -1,6 +1,5 @@
-import XCTest
-
 @testable import TemplateApp
+import XCTest
 
 /// Integration tests verify real dependency implementations work correctly.
 ///
@@ -53,7 +52,7 @@ import XCTest
 /// - **Real dependencies**: Test actual storage, not mocked behavior
 @MainActor
 final class FeatureTests: XCTestCase {
-  func testPlaceholder() async {
+  func testPlaceholder() {
     // This placeholder verifies the integration test target builds successfully.
     // Replace with real persistence tests when adding storage features.
     //

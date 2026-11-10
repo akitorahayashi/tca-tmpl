@@ -1,8 +1,7 @@
+@testable import AppFeatureCore
 import ComposableArchitecture
 import CounterFeatureCore
 import XCTest
-
-@testable import AppFeatureCore
 
 @MainActor
 final class AppFeatureTests: XCTestCase {

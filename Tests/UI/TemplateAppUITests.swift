@@ -2,7 +2,7 @@ import XCTest
 
 @MainActor
 final class TemplateAppUITests: XCTestCase {
-  func testExample() throws {
+  func testExample() {
     let app = XCUIApplication()
     app.launch()
 

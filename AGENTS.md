@@ -26,8 +26,7 @@ This project is an iOS application template built with SwiftUI and The Composabl
 │   └── UI/                    # Black-box UI tests
 ├── fastlane/                  # Automation scripts for building, testing, and signing
 ├── justfile                   # Command runner configuration for project automation
-├── project.envsubst.yml       # XcodeGen template for project generation
-├── dependencies.yml           # Package dependency products for target embedding
+├── project.yml                # Source configuration for XcodeGen
 ├── Mintfile                   # Swift CLI tool dependencies
 └── Gemfile                    # Ruby dependencies for Fastlane
 ```
@@ -47,9 +46,9 @@ This project is an iOS application template built with SwiftUI and The Composabl
     - Test stores override dependencies for isolated testing
 - **Concurrency**: Swift 6 strict concurrency with `@MainActor` for UI-bound state
 - **Project Generation**:
-    - XcodeGen generates `.xcodeproj` from `project.envsubst.yml`
-    - `dependencies.yml` is embedded into targets via `# __DEPENDENCIES__` placeholder
-    - `just gen-pj` processes templates and runs XcodeGen
+    - `project.yml` is the version-controlled source; XcodeGen generates the ignored `.xcodeproj` directly from it
+    - `just gen-pj` passes `TEAM_ID` to XcodeGen for `${TEAM_ID}` expansion. An empty value supports unsigned builds and simulator tests
+    - Package product dependencies are declared in `project.yml`
 - **Testing Strategy**:
     - **Package Tests**: SwiftPM test targets for reducer behavior using TCA `TestStore` (mocked dependencies). Run via `just pkg-test`.
     - **Integration Tests** (`Tests/Intg/`): Real dependency verification (persistence round-trip, actual storage). No TCA imports.
@@ -63,7 +62,7 @@ This project is an iOS application template built with SwiftUI and The Composabl
 ### Dependencies
 
 - TCA and related packages are declared only in `Packages/Package.swift`.
-- `project.envsubst.yml` references only `Packages` as a local path; dependencies resolve transitively.
+- `project.yml` references only `Packages` as a local path; dependencies resolve transitively.
 - This prevents duplicate declarations and ensures consistent version resolution.
 
 ## Development Commands
@@ -71,7 +70,7 @@ This project is an iOS application template built with SwiftUI and The Composabl
 - **Test**: `just test` - Runs all test suites (Package, Unit, Integration, UI)
 - **Package Test**: `just package-test` - Runs Swift package tests
 - **Setup**: `just setup` - Installs dependencies and generates the project
-- **Generate Project**: `just gen-pj` - Regenerates the Xcode project from templates
+- Generate Project: `just gen-pj` - Generates `TemplateApp.xcodeproj` from `project.yml`
 
 ## Development Guidelines
 
@@ -82,9 +81,8 @@ This project is an iOS application template built with SwiftUI and The Composabl
 - If in a sandbox environment, submit changes without forcing test runs
 
 ### Project Configuration
-- Edit `project.envsubst.yml`, not the generated `project.yml`
-- Run `just gen-pj` after configuration changes
-- `dependencies.yml` controls which package products are linked to targets
+- Project configuration belongs in `project.yml`; `just gen-pj` regenerates `.xcodeproj` from it
+- Target dependencies in `project.yml` identify the linked package products
 
 ### TCA Patterns
 - Reducers own all business logic; views remain thin

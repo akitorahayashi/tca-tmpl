@@ -53,9 +53,11 @@ To find your simulator UDID, run `xcrun simctl list devices` and copy the UUID o
 
 ### 3. Update Configuration Files
 
-#### project.envsubst.yml
+#### project.yml
 
 This is the source file for the Xcode project (`.xcodeproj`).
+
+`just gen-pj` runs XcodeGen directly against `project.yml`. XcodeGen expands `${TEAM_ID}` from the environment; an empty value supports unsigned builds and simulator tests. The generated `.xcodeproj` remains excluded from version control.
 
 | Setting Item | Current Value | Change Example |
 |---|---|---|
@@ -63,11 +65,7 @@ This is the source file for the Xcode project (`.xcodeproj`).
 | `packages.Packages.path` | `Packages` | `Packages` |
 | `PRODUCT_BUNDLE_IDENTIFIER` | `com.akitorahayashi.TemplateApp` | `com.yourcompany.NewApp` |
 
-**Note:** After changing `project.envsubst.yml`, run `just gen-pj` to regenerate the project.
-
-#### dependencies.yml
-
-Update package references if you rename the package.
+`just gen-pj` regenerates the `.xcodeproj` after changes to `project.yml`.
 
 #### Packages/Package.swift
 
@@ -94,7 +92,7 @@ Update the package name and all target/product names.
 | Command | Description |
 |---|---|
 | `just setup` | Initialize project: install dependencies and generate project |
-| `just gen-pj` | Regenerate Xcode project from templates |
+| `just gen-pj` | Generate Xcode project from `project.yml` |
 | `just check` | Format and lint code |
 | `just test` | Run all tests (package + Xcode) |
 | `just package-test` | Run Swift package tests only |
